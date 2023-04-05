@@ -28,6 +28,11 @@ const users = db.define('accounts', {
         type: "longtext",
         allowNull: false,
         defaultValue: "{}"
+    },
+    token: {
+        type: "longtext",
+        allowNull: false,
+        defaultValue: "null"
     }
 }, {
     //Disable defaults from sequelize

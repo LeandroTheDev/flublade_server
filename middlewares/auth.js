@@ -14,6 +14,7 @@ module.exports = {
                 message: "Token Error"
             });
         }
+        //Split bearer and token
         const [, token] = authHeaders.split(' ');
         //Token exist check
         if (!token) {
@@ -25,13 +26,13 @@ module.exports = {
 
         //Token verification check
         try {
-            const decode = await promisify(jwt.verify)(token, "2!@MDKIOSLAMCM@K!OM#K<LZXA!@#$)S(&*A!11234MkI");
+            const decode = await promisify(jwt.verify)(token.slice(0,-1), 'GenericTokenPassword(1wWeRtyK243Mmnkjxz23zs)');
             req.userId = decode.id;
             return next();
         } catch (error) {
             return res.status(400).json({
                 error: true,
-                message: "Invalid Token"
+                message: 'Invalid Token'
             });
         }
     }

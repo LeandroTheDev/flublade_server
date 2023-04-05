@@ -10,15 +10,6 @@ const users = require('./models/user');
 //Enable json post
 app.use(express.json());
 
-//Menu
-app.get('/', eAdmin, async (req, res) => {
-    return res.json({
-        error: false,
-        message: 'Users',
-        id: req.userId
-    })
-})
-
 //Create account
 app.post('/createAcc', async (req, res) => {
     var data = req.body;
@@ -69,35 +60,208 @@ app.post('/createAcc', async (req, res) => {
 //Login
 app.post('/login', async (req, res) => {
 
-    //Credentials username check
-    if (req.body.username != 'test') {
-        return res.status(400).json({
-            error: true,
-            message: 'Wrong Credentials'
-        });
-    }
-    // Encrypte
-    // console.log(await bcrypt.hash('', 8));
-    //Credentials password check 123456
-    if (!(await bcrypt.compare(req.body.password, '$2a$08$UB4ERuSHliaOU1cRkLAziOlF9KVMdNoQobwg3fUim.iaPgXn1lK7i'))) {
-        return res.status(400).json({
-            error: true,
-            message: 'Wrong Credentials'
-        });
+    //Pickup from database  profile info
+    const user = await users.findOne({
+        attributes: ['id', 'username', 'password', 'language', 'characters', 'token'],
+        where: {
+            username: req.body.username,
+        }
+    });
+
+    //Credentials check
+    if (true) {
+        //Incorrect username check
+        if (user === null) {
+            return res.status(400).json({
+                error: true,
+                message: 'Wrong Credentials'
+            });
+        }
+        //Incorrect password check
+        if (!(await bcrypt.compare(req.body.password, user.password))) {
+            return res.status(400).json({
+                error: true,
+                message: 'Wrong Credentials'
+            });
+        }
     }
 
     //Token creation
-    var token = jwt.sign({ id: 1 }, '2!@MDKIOSLAMCM@K!OM#K<LZXA!@#$)S(&*A!11234MkI', {});
+    user.token = jwt.sign({ id: user.id }, 'GenericTokenPassword(1wWeRtyK243Mmnkjxz23zs)', {});
+
+    //Save in database
+    await user.save();
 
     //Success Login
     return res.json({
         error: false,
         message: 'Success',
-        token: token,
+        id: user.id,
+        username: user.username,
+        language: user.language,
+        characters: user.characters,
+        token: user.token
+    });
+});
+
+//Login Remember
+app.post('/loginRemember', async (req, res) => {
+
+    //Pickup from database  profile info
+    const user = await users.findOne({
+        attributes: ['id', 'username', 'password', 'language', 'characters', 'token'],
+        where: {
+            id: req.body.id,
+        }
+    });
+
+    //Token check
+    if (req.body.token != user.token) {
+        return res.status(400).json({
+            error: true,
+            message: 'Invalid Login'
+        });
+    }
+    //Token recreation
+    user.token = jwt.sign({ id: user.id }, 'GenericTokenPassword(1wWeRtyK243Mmnkjxz23zs)', {});
+    await user.save();
+
+    //Success Login
+    return res.json({
+        error: false,
+        message: 'Success',
+        id: user.id,
+        username: user.username,
+        language: user.language,
+        characters: user.characters,
+        token: user.token
+    });
+});
+
+//Update Language
+app.post('/updateLanguage', async (req, res) => {
+    //Pickup from database  profile info
+    const user = await users.findOne({
+        attributes: ['id', 'language', 'token'],
+        where: {
+            id: req.body.id,
+        }
+    });
+
+    //Token check
+    if (req.body.token != user.token) {
+        return res.status(400).json({
+            error: true,
+            message: 'Invalid Login'
+        });
+    }
+
+    //Save on database
+    user.language = req.body.language;
+    await user.save();
+
+    //Success
+    return res.json({
+        error: false,
+        message: 'Success',
+    });
+});
+
+//Get characters
+app.post('/getCharacters', async (req, res) => {
+    //Pickup from database  profile info
+    const user = await users.findOne({
+        attributes: ['id', 'characters', 'token'],
+        where: {
+            id: req.body.id,
+        }
+    });
+
+    //Token check
+    if (req.body.token != user.token) {
+        return res.status(400).json({
+            error: true,
+            message: 'Invalid Login'
+        });
+    }
+
+    //Success
+    return res.json({
+        error: false,
+        message: 'Success',
+        characters: user.characters
+    });
+});
+
+//Remove characters
+app.post('/removeCharacters', async (req, res) => {
+    //Pickup from database  profile info
+    const user = await users.findOne({
+        attributes: ['id', 'username', 'characters', 'token'],
+        where: {
+            id: req.body.id,
+        }
+    });
+
+    //Token check
+    if (req.body.token != user.token) {
+        return res.status(400).json({
+            error: true,
+            message: 'Invalid Login'
+        });
+    }
+
+    //Removing character
+    const json = JSON.parse(user.characters);
+    var i = req.body.index;
+    while (true) {
+        //Remove character
+        if (i == req.body.index) {
+            console.log('Character Deleted: ' + json['character' + i]['name'] + ', Level: ' + json['character' + i]['level'] + ', Account: ' + user.username);
+            delete json['character' + i];
+        }
+        //Subsequent index
+        var a = i + 1;
+        //Subsequent break verification
+        if (json['character' + a] == null) {
+            a = a - 1;
+            delete json['character' + a];
+            break;
+        }
+        //Lowering the character index of subsequent characters
+        json['character' + i] = json['character' + a];
+        i++;
+    }
+
+    //Save on database
+    user.characters = JSON.stringify(json);
+    user.save();
+
+    //Success
+    return res.json({
+        error: false,
+        message: 'Success',
+        characters: user.characters
+    });
+});
+
+//Create characters
+app.post('/createCharacters', async (req, res) => {
+    //Pickup from database  profile info
+    const user = await users.findOne({
+        attributes: ['id', 'username', 'characters', 'token'],
+        where: {
+            id: req.body.id,
+        }
+    });
+    //Success
+    return res.json({
+        error: false,
+        message: 'Success'
     });
 });
 
 //Ports for the server
 app.listen(8080, () => {
     console.log('Server started in ports 8080: http://localhost:8080');
-}); 
+});
