@@ -2,10 +2,15 @@
 const Sequelize = require('sequelize');
 
 //Database informations
-const sequelize = new Sequelize('flublade', 'flubladeGuest', 'i@Dhs4e5E%fGz&ngbY2m&AGRCVlskBUrrCnsYFUze&fhxehb#j', {
+const sequelize = new Sequelize('flublade', 'flubladeAdmin', 'WVxDC*DCuBE8h!87af6Oxn^a9K&hdo5OUQUSfksRo@meIvFHlO', {
     host: "192.168.0.13",
     dialect: "mariadb",
-    logging: false
+    logging: false,
+    dialectOptions: {
+        options: {
+            requestTimeout: 3000
+        }
+    },
 });
 
 //Connection Sucess

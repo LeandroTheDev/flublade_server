@@ -3,7 +3,7 @@ const Sequelize = require('sequelize');
 const db = require('./db');
 
 //Database tables
-const users = db.define('accounts', {
+const accounts = db.define('accounts', {
     id: {
         type: Sequelize.INTEGER,
         autoIncrement: true,
@@ -42,7 +42,7 @@ const users = db.define('accounts', {
 });
 
 //Create table if not exists
-users.sync();
+accounts.sync();
 
 //Exports globally
-module.exports = users;
+module.exports = accounts;
