@@ -335,21 +335,19 @@ app.post('/createCharacters', async (req, res) => {
             json['character' + Object.keys(json).length] = {
                 'name': req.body.name,
                 'class': req.body.class,
-                'life': req.body.maxLife,
+                'life': SystemFunctions.playerMaxLife(req.body.class, baseAtributes[req.body.class]['strength']),
                 'mana': baseAtributes[req.body.class].mana,
                 'armor': baseAtributes[req.body.class].armor,
                 'level': 1,
                 'xp': 0,
                 'skillpoint': 0,
+                'damage': 1,
                 'strength': baseAtributes[req.body.class].strength,
                 'agility': baseAtributes[req.body.class].agility,
-                'intelligence':
-                    baseAtributes[req.body.class].intelligence,
-                'luck': 0,
-                'inventory': '{}',
-                'buffs':
-                    JSON.stringify(baseAtributes[req.body.class].buffs),
-                'skills': JSON.stringify(baseAtributes[req.body.class].skills),
+                'intelligence': baseAtributes[req.body.class].intelligence,
+                'inventory': {},
+                'buffs': baseAtributes[req.body.class].buffs,
+                'skills': baseAtributes[req.body.class].skills,
                 'equips': [
                     'none',
                     'none',
@@ -449,7 +447,6 @@ app.post('/updateCharacters', async (req, res) => {
                 json['character' + req.body.selectedCharacter]['strength'] = req.body.strength;
                 json['character' + req.body.selectedCharacter]['agility'] = req.body.agility;
                 json['character' + req.body.selectedCharacter]['intelligence'] = req.body.intelligence;
-                json['character' + req.body.selectedCharacter]['luck'] = req.body.luck;
                 json['character' + req.body.selectedCharacter]['inventory'] = req.body.inventory;
                 json['character' + req.body.selectedCharacter]['buffs'] = req.body.buffs;
                 json['character' + req.body.selectedCharacter]['equips'] = req.body.equips;
@@ -483,17 +480,348 @@ app.post('/updateCharacters', async (req, res) => {
 //Gameplay
 //------
 
-app.post('/enemyKilled', async (req, res) => {
-    const user = await world.findOne({
-        attributes: ['enemy'],
-        where: {
-            id_world: req.body.id,
+app.post('/attackEnemy', async (req, res) => {
+    try {
+        //Variables Declaration
+        var enemyLife = req.body.enemyLife;
+        var enemyArmor = req.body.enemyArmor;
+        const enemyMana = req.body.enemyMana;
+        const enemyDamage = req.body.enemyDamage;
+        const enemyName = req.body.enemyName;
+        const enemyXP = req.body.enemyXP;
+        const enemyLevel = req.body.enemyLevel;
+        const playerSkill = req.body.playerSkill;
+        var battleLog = [];
+
+        //Pickup Characters Infos
+        const user = await accounts.findOne({
+            attributes: ['id', 'username', 'characters', 'token'],
+            where: {
+                id: req.body.id,
+            }
+        });
+
+        //Token check
+        if (req.body.token != user.token) {
+            return res.status(400).json({
+                error: true,
+                message: 'Invalid Login'
+            });
         }
-    });
+
+        //Battle
+        if (true) {
+            //Converting Character
+            var characters = JSON.parse(user.characters);
+            var character = characters['character' + req.body.selectedCharacter];
+            //Converting player stats
+            var playerStatsSkill = [character['damage'], parseFloat(character['life']), parseFloat(character['mana']), character['strength'], character['agility'], character['intelligence'], SystemFunctions.playerMaxLife(character['class'], character['strength'])];
+            const baseStatsSkill = [character['damage'], character['life'], character['mana'], character['strength'], character['agility'], character['intelligence'], SystemFunctions.playerMaxLife(character['class'], character['strength'])];
+            var lateBuffs = [];
+
+            //Player Turn
+            if (true) {
+                //Passive
+                if (true) {
+                    //Passives
+                    var buffs = Object.values(character['buffs']);
+                    for (var i = 0; i < buffs.length; i++) {
+                        //Verify if passive is late
+                        if (!skillsId[buffs[i]['name']]['isLate']) {
+                            var stats = PassivesFunctions.passiveTranslate(playerStatsSkill, buffs[i]['name']);
+                            //Damage Passive
+                            if (stats['damage'] != null) {
+                                character['damage'] = stats['damage'];
+                            }
+                            //Life Passive
+                            if (stats['=life'] != null) {
+                                character['life'] = stats['=life'];
+                                if (stats['+life'] != null) {
+                                    //Add batlelog
+                                    battleLog[battleLog.length] = {
+                                        'log1': 'battle_log_playerHealed1',
+                                        'log2': stats['+life'],
+                                        'log3': 'battle_log_playerHealed2',
+                                    };
+                                }
+                            }
+                        } else {
+                            //Add late buff to late buffs variable
+                            lateBuffs[lateBuffs.length] = buffs[i];
+                        }
+                    }
+                }
+                //Refresh Stats
+                playerStatsSkill = [character['damage'], parseFloat(character['life']), parseFloat(character['mana']), character['strength'], character['agility'], character['intelligence'], SystemFunctions.playerMaxLife(character['class'], character['strength'])];
+                //Skill
+                if (true) {
+                    var stats = SkillsFunctions.skillTranslate(playerStatsSkill, playerSkill);
+                    //Damage Skill
+                    if (stats['damage'] != null) {
+                        //Reduce Enemy Life
+                        enemyArmor = SystemFunctions.armorPorcentageCalculator(enemyArmor);
+                        enemyLife = enemyLife - parseFloat((stats['damage'] * ((100 - enemyArmor) / 100))).toFixed(2);
+                        //Add batlelog
+                        battleLog[battleLog.length] = {
+                            'log1': 'battle_log_playerAttack1',
+                            'log2': parseFloat((stats['damage'] * ((100 - enemyArmor) / 100))).toFixed(2),
+                            'log3': 'battle_log_playerAttack2',
+                            'log4': 'enemy_' + enemyName,
+                        };
+                    }
+                    //Life Skill
+                    if (stats['=life'] != null) {
+                        //Lose Life
+                        if (stats['-life'] != null) {
+                            //Reduce Player Life
+                            character['life'] = stats['=life'];
+                            //Log
+                            battleLog[battleLog.length] = {
+                                'log1': 'battle_log_loseHealthByPlayerSkill',
+                                'log2': stats['-life'],
+                                'log3': 'battle_log_loseHealthByPlayerSkill2',
+                                'log4': 'magics_' + playerSkill,
+                            };
+                        }
+                    }
+                }
+                //Refresh Stats
+                playerStatsSkill = [character['damage'], parseFloat(character['life']), parseFloat(character['mana']), character['strength'], character['agility'], character['intelligence'], SystemFunctions.playerMaxLife(character['class'], character['strength'])];
+            }
+            //Enemy Turn
+            if (true) {
+                //Damage Calculation
+                const playerArmor = SystemFunctions.armorPorcentageCalculator(character['armor']);
+                character['life'] = character['life'] - (enemyDamage * ((100 - playerArmor) / 100));
+                //Add batlelog
+                battleLog[battleLog.length] = {
+                    'log1': 'battle_log_enemyAttack1',
+                    'log2': (enemyDamage * ((100 - playerArmor) / 100)),
+                    'log3': 'battle_log_enemyAttack2',
+                    'log4': 'enemy_' + enemyName,
+                };
+                //Refresh Stats
+                playerStatsSkill = [character['damage'], parseFloat(character['life']), parseFloat(character['mana']), character['strength'], character['agility'], character['intelligence'], SystemFunctions.playerMaxLife(character['class'], character['strength'])];
+                //Check if player Dead
+                if (parseFloat(character['life']) <= 0) {
+                    battleLog[battleLog.length] = {
+                        'log1': 'battle_log_playerDead',
+                    };
+                    //Reset Player Life
+                    character['life'] = SystemFunctions.playerMaxLife(character['class'], character['strength']);
+                    characters['character' + req.body.selectedCharacter] = character;
+                    user.characters = characters;
+                    await user.save();
+                    //Player Dead
+                    return res.json({
+                        error: false,
+                        message: 'Player Dead',
+                        enemyLife: enemyLife,
+                        enemyArmor: enemyArmor,
+                        enemyMana: enemyMana,
+                        enemyDamage: enemyDamage,
+                        enemyName: enemyName,
+                        enemyLevel: enemyLevel,
+                        enemyXP: enemyXP,
+                        battleLog: battleLog,
+                    });
+                }
+                //Late Passive
+                if (true) {
+                    for (var i = 0; i < lateBuffs.length; i++) {
+                        var stats = PassivesFunctions.passiveTranslate(playerStatsSkill, lateBuffs[i]['name']);
+                        //Damage Passive
+                        if (stats['damage'] != null) {
+                            character['damage'] = stats['damage'];
+                        }
+                        //Life Passive
+                        if (stats['=life'] != null) {
+                            character['life'] = stats['=life'];
+                            if (stats['+life'] != null) {
+                                //Add batlelog
+                                battleLog[battleLog.length] = {
+                                    'log1': 'battle_log_playerHealed1',
+                                    'log2': stats['+life'],
+                                    'log3': 'battle_log_playerHealed2',
+                                };
+                            }
+                        }
+                    }
+                }
+            }
+
+            //Bonus stats to default
+            if (true) {
+                character['damage'] = baseStatsSkill[0];
+                character['strength'] = baseStatsSkill[3];
+                character['agility'] = baseStatsSkill[4];
+                character['intelligence'] = baseStatsSkill[5];
+            }
+
+            //Loot
+            if (enemyLife <= 0) {
+                var xp = 0;
+                var gold = 0;
+                var loots = [];
+                //Xp
+                if (true) {
+                    if (enemyLevel <= 10) {
+                        // 2 additional xp chance
+                        xp = enemyXP + parseFloat((Math.random() * 3).toFixed(2));
+                    } else if (enemyLevel >= 11 &&
+                        enemyXP <= 20) {
+                        // 10 additional xp chance
+                        xp = enemyXP + parseFloat((Math.random() * 11).toFixed(2));
+                    } else if (enemyLevel >= 21 &&
+                        enemyXP <= 30) {
+                        // 30 additional xp chance
+                        xp = enemyXP + parseFloat((Math.random() * 31).toFixed(2));
+                    } else {
+                        // 60 additional xp chance
+                        xp = enemyXP + parseFloat((Math.random() * 61).toFixed(2));
+                    }
+                }
+                //Items
+                if (true) {
+                    //Gold
+                    if (true) {
+                        if (enemyLevel >= 0 && enemyLevel <= 4) {
+                            gold = 1 + Math.floor(Math.random() * 4);
+                        } else if (enemyLevel >= 5 && enemyLevel <= 10) {
+                            gold = 3 + Math.floor(Math.random() * 9);
+                        } else if (enemyLevel >= 11 && enemyLevel <= 20) {
+                            gold = 6 + Math.floor(Math.random() * 16);
+                        } else if (enemyLevel >= 21 && enemyLevel <= 30) {
+                            gold = 12 + Math.floor(Math.random() * 21);
+                        } else if (enemyLevel >= 31 && enemyLevel <= 45) {
+                            gold = 20 + Math.floor(Math.random() * 31);
+                        } else if (enemyLevel >= 46 && enemyLevel <= 60) {
+                            gold = 30 + Math.floor(Math.random() * 41);
+                        } else {
+                            gold = 50 + Math.floor(Math.random() * 46);
+                        }
+                        //Add Gold to Loots
+                        loots[loots.length] = itemsId['gold'];
+                        loots[loots.length - 1]['quantity'] = gold;
+                    }
+                    //Loot Quantity
+                    if (true) {
+                        var alreadyUnique = false;
+                        for (var i = 0; i < Object.keys(lootDropRate[enemyName]).length / 3; i++) {
+                            //Calculates the chance
+                            var chance = Math.floor(Math.random() * 100);
+                            //Add item
+                            if (lootDropRate[enemyName][i + 'Chance'] >= chance) {
+                                var breaker = false;
+
+                                //Verify if item already exists, else dont do nothing
+                                for (var a = 0; a < loots.length; a++) {
+                                    if (loots[a]['name'] == lootDropRate[enemyName][i]) {
+                                        loots[a]['quantity'] = loots[a]['quantity'] + 1;
+                                        breaker = true;
+                                        break;
+                                    }
+                                }
+                                //Verify if item is already added, else add item
+                                if (!breaker) {
+                                    //Verify if is unique
+                                    if (lootDropRate[enemyName][i + 'Unique'] != true) {
+                                        //If has a tier
+                                        if (lootDropRate[enemyName][i].includes('%')) {
+                                            loots[loots.length] = SystemFunctions.calculatesItemTier(lootDropRate[enemyName][i]);
+                                            loots[loots.length - 1]['quantity'] = 1;
+                                        } else {
+                                            loots[loots.length] = itemsId[lootDropRate[enemyName][i]];
+                                            loots[loots.length - 1]['quantity'] = 1;
+                                        }
+                                    } else {
+                                        if (!alreadyUnique) {
+                                            alreadyUnique = true;
+                                            //If has a tier
+                                            if (lootDropRate[enemyName][i].includes('%')) {
+                                                loots[loots.length] = SystemFunctions.calculatesItemTier(lootDropRate[enemyName][i]);
+                                                loots[loots.length - 1]['quantity'] = 1;
+                                            } else {
+                                                loots[loots.length] = itemsId[lootDropRate[enemyName][i]];
+                                                loots[loots.length - 1]['quantity'] = 1;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            //Save Stats
+            characters['character' + req.body.selectedCharacter] = character;
+            user.characters = characters;
+            //Save on database
+            await user.save();
+
+            //Enemy Dead
+            if (enemyLife <= 0) {
+                //Add batlelog
+                battleLog[battleLog.length] = {
+                    'log1': 'battle_log_enemyDead',
+                    'log2': 'enemy_' + enemyName,
+                };
+                //Enemy Dead
+                return res.json({
+                    error: false,
+                    message: 'Enemy Dead',
+                    enemyLife: enemyLife,
+                    enemyArmor: enemyArmor,
+                    enemyMana: enemyMana,
+                    enemyDamage: enemyDamage,
+                    enemyName: enemyName,
+                    enemyLevel: enemyLevel,
+                    enemyXP: enemyXP,
+                    battleLog: battleLog,
+                    loots: loots,
+                    earnedXP: xp,
+                });
+            }
+
+
+        }
+
+        //Continue
+        return res.json({
+            error: false,
+            message: 'Continue',
+            enemyLife: enemyLife,
+            enemyArmor: enemyArmor,
+            enemyMana: enemyMana,
+            enemyDamage: enemyDamage,
+            enemyName: enemyName,
+            enemyLevel: enemyLevel,
+            enemyXP: enemyXP,
+            battleLog: battleLog,
+        });
+    } catch (error) {
+        return res.status(400).json({
+            error: true,
+            message: 'Invalid Login'
+        });
+    }
 });
 
 app.post('/gameplayStats', async (req, res) => {
     try {
+
+        //Returns All Stats
+        if (req.body.all) {
+            return res.json({
+                error: false,
+                message: 'Success',
+                baseAtributes: baseAtributes,
+                levelCaps: levelCaps,
+                skillsId: skillsId,
+                itemsId: itemsId,
+            });
+        }
+
         //Return Base Atributes
         if (req.body.baseAtributes) {
             return res.json({
@@ -521,12 +849,22 @@ app.post('/gameplayStats', async (req, res) => {
             });
         }
 
+        //Return Items Infos
+        if (req.body.itemsId) {
+            return res.json({
+                error: false,
+                message: 'Success',
+                itemsId: itemsId
+            });
+        }
+
         //Invalid Stats
         return res.json({
             error: false,
             message: 'Invalid Stats',
             characters: levelCaps
         });
+
         //Error Treatment
     } catch (error) {
         return res.status(400).json({
@@ -534,6 +872,131 @@ app.post('/gameplayStats', async (req, res) => {
             message: 'Unkown Error'
         });
     }
+});
+
+app.post('/changeEquip', async (req, res) => {
+    const equipped = req.body.equipped;
+
+    //Pickup Characters Infos
+    const user = await accounts.findOne({
+        attributes: ['id', 'username', 'characters', 'token'],
+        where: {
+            id: req.body.id,
+        }
+    });
+
+    //Token check
+    if (req.body.token != user.token) {
+        return res.status(400).json({
+            error: true,
+            message: 'Invalid Login'
+        });
+    }
+
+    //Database infos
+    var characters = JSON.parse(user.characters);
+    var selectedCharacter = characters['character' + req.body.selectedCharacter];
+
+    //Unequip
+    if (equipped == 'none') {
+        //Adding in inventory
+        if (true) {
+            //Verifiy if exist in inventory
+            if (selectedCharacter['inventory'][selectedCharacter['equips'][req.body.index]['name']] == null) {
+                selectedCharacter['inventory'][selectedCharacter['equips'][req.body.index]['name']] = selectedCharacter['equips'][req.body.index];
+                //Add a quantity
+            } else {
+                selectedCharacter['inventory'][selectedCharacter['equips'][req.body.index]['name']]['quantity'] = selectedCharacter['inventory'][selectedCharacter['equips'][req.body.index]['name']]['quantity'] + 1;
+            }
+        }
+        //Remove from equipment
+        selectedCharacter['equips'][req.body.index] = equipped;
+
+        //Database Save
+        characters['character' + req.body.selectedCharacter] = selectedCharacter;
+        user.characters = JSON.stringify(characters);
+        await user.save();
+
+        return res.json({
+            error: false,
+            message: 'Success',
+        });
+    }
+
+    //Inconsistent Check (Not in Inventory)
+    if (selectedCharacter['inventory'][equipped['name']]['name'] != equipped['name']) {
+        return res.status(400).json({
+            error: true,
+            message: 'Invalid Login'
+        });
+    }
+
+    //Adding on Equipment and Removing from Inventory
+    if (true) {
+        //Inconsistent Check (Not in correct index)
+        if (true) {
+            //Verify Tier
+            var tier = 0;
+            var name = equipped['name'];
+            if (equipped['name'].includes('%')) {
+                tier = parseInt(equipped['name'].slice(-2));
+                name = equipped['name'].substring(0, equipped['name'].length - 3);
+            }
+            //Index Verification
+            const index = itemsId[name]['equip'];
+            if (index.length > 1) {
+                var isConsistent = false;
+                for (var i = 0; i < index.length; i++) {
+                    if (index[i] == req.body.index) {
+                        isConsistent = true;
+                    }
+                }
+                if (isConsistent == false) {
+                    return res.status(400).json({
+                        error: true,
+                        message: 'Invalid Login'
+                    });
+                }
+            } else {
+                if (index != req.body.index) {
+                    return res.status(400).json({
+                        error: true,
+                        message: 'Invalid Login'
+                    });
+                }
+            }
+        }
+        //If a weapon is already equipped, unequip it
+        if (selectedCharacter['equips'][req.body.index] != 'none') {
+            if (selectedCharacter['inventory'][selectedCharacter['equips'][req.body.index]['name']]['quantity'] >= 1) {
+                selectedCharacter['inventory'][selectedCharacter['equips'][req.body.index]['name']]['quantity'] = selectedCharacter['inventory'][selectedCharacter['equips'][req.body.index]['name']]['quantity'] + 1;
+            } else {
+                selectedCharacter['inventory'][selectedCharacter['equips'][req.body.index]['name']] = selectedCharacter['equips'][req.body.index];
+            }
+        }
+        //Adding in equipment
+        selectedCharacter['equips'][req.body.index] = equipped;
+        //Removing from inventory
+        if (true) {
+            if (selectedCharacter['inventory'][equipped['name']]['quantity'] > 1) {
+                selectedCharacter['inventory'][equipped['name']]['quantity'] = selectedCharacter['inventory'][equipped['name']]['quantity'] - 1;
+            } else {
+                delete selectedCharacter['inventory'][equipped['name']];
+            }
+        }
+    }
+
+    //Database Save
+    characters['character' + req.body.selectedCharacter] = selectedCharacter;
+    user.characters = JSON.stringify(characters);
+    await user.save();
+
+    //Sucess
+    return res.json({
+        error: false,
+        message: 'Success',
+    });
+
 });
 
 //------
@@ -581,7 +1044,7 @@ const levelCaps = {
     38: 24000,
     39: 26000,
     40: 30000,
-};
+}
 const skillsId = {
     //Magics
     'basicAttack': {
@@ -601,18 +1064,20 @@ const skillsId = {
         'isLate': false,
         'type': 'physical',
         'image': 'assets/skills/furiousAttack.png',
-        'costType': 'life',
+        'costType': '-life',
         'costQuantity': '5%',
     },
     //Passives
     'healthTurbo': {
         'image': 'assets/skills/passives/healthTurbo',
         'name': 'healthTurbo',
-        'isLate': false,
+        'isLate': true,
         'type': 'life',
         'image': 'assets/skills/furiousAttack.png',
         'costType': '+life',
-        'costQuantity': '0.5',
+        'costQuantity': 'none',
+        'isStackable': false,
+        'isHide': false,
     },
     'damageTurbo': {
         'image': 'assets/skills/passives/damageTurbo',
@@ -621,7 +1086,9 @@ const skillsId = {
         'type': 'damage',
         'image': 'assets/skills/furiousAttack.png',
         'costType': '+damage',
-        'costQuantity': '3%',
+        'costQuantity': 'none',
+        'isStackable': false,
+        'isHide': false,
     },
     'magicalBlock': {
         'name': 'magicalBlock',
@@ -631,6 +1098,8 @@ const skillsId = {
         'image': 'assets/skills/magicalBlock.png',
         'costType': 'none',
         'costQuantity': 'none',
+        'isStackable': false,
+        'isHide': false,
     },
     'petsBlock': {
         'name': 'petsBlock',
@@ -640,6 +1109,8 @@ const skillsId = {
         'image': 'assets/skills/petsBlock.png',
         'costType': 'none',
         'costQuantity': 'none',
+        'isStackable': false,
+        'isHide': false,
     },
     'noisy': {
         'name': 'noisy',
@@ -649,8 +1120,10 @@ const skillsId = {
         'image': 'assets/skills/noisy.png',
         'costType': 'none',
         'costQuantity': 'none',
+        'isStackable': false,
+        'isHide': false,
     },
-};
+}
 const baseAtributes = {
     'archer': {
         'life': 8,
@@ -693,7 +1166,429 @@ const baseAtributes = {
             'furiousAttack': skillsId['furiousAttack'],
         },
     }
-};
+}
+const lootDropRate = {
+    
+    'smallspider': {
+        '0': 'gold',
+        '0Chance': 50,
+        '0Unique': false,
+        '1': 'thread',
+        '1Chance': 25,
+        '1Unique': false,
+        '2': 'cloth',
+        '2Chance': 20,
+        '2Unique': false,
+        '3': 'wooden_sword',
+        '3Chance': 10,
+        '3Unique': true,
+        '4': 'thread',
+        '4Chance': 25,
+        '4Unique': false,
+        '5': 'thread',
+        '5Chance': 25,
+        '5Unique': false,
+        '6': 'thread',
+        '6Chance': 25,
+        '6Unique': false,
+        '7': 'wooden_sword%01',
+        '7Chance': 8,
+        '7Unique': true,
+    }
+}
+const itemsId = {
+    //Crafting
+    'cloth': {
+        'name': 'cloth',
+        'image': 'assets/items/cloth.png',
+        'equip': 'none',
+        'baseArmor': 0,
+        'baseMagic': 0,
+        'baseDamage': 0,
+        'baseStrength': 0,
+        'baseAgility': 0,
+        'baseIntelligence': 0,
+        'scalling': 0,
+        'passive': 'none',
+        'sell': 2,
+    },
+    'thread': {
+        'name': 'thread',
+        'image': 'assets/items/thread.png',
+        'equip': 'none',
+        'baseArmor': 0,
+        'baseMagic': 0,
+        'baseDamage': 0,
+        'baseStrength': 0,
+        'baseAgility': 0,
+        'baseIntelligence': 0,
+        'scalling': 0,
+        'passive': 'none',
+        'sell': 3,
+    },
+    'gold': {
+        'name': 'gold',
+        'image': 'assets/items/gold.png',
+        'equip': 'none',
+        'baseArmor': 0,
+        'baseMagic': 0,
+        'baseDamage': 0,
+        'baseStrength': 0,
+        'baseAgility': 0,
+        'baseIntelligence': 0,
+        'scalling': 0,
+        'passive': 'none',
+        'sell': 0,
+    },
+    //Weapons
+    'wooden_sword': {
+        'name': 'wooden_sword',
+        'image': 'assets/items/wooden_sword.png',
+        'equip': [9, 10],
+        'baseArmor': 0,
+        'baseMagic': 0,
+        'baseDamage': 2,
+        'baseStrength': 0,
+        'baseAgility': 0,
+        'baseIntelligence': 0,
+        'scalling': 1,
+        'passive': 'none',
+        'sell': 1,
+    },
+    'sword_of_the_primordial_fire': {
+        'name': 'sword_of_the_primordial_fire',
+        'image': 'assets/items/sword_of_the_primordial_fire.png',
+        'equip': [9, 10],
+        'baseArmor': 0,
+        'baseMagic': 0,
+        'baseDamage': 525,
+        'baseStrength': 2,
+        'baseAgility': 0,
+        'baseIntelligence': 0,
+        'scalling': 0.1,
+        'passive': 'none',
+        'sell': 5000,
+    },
+    //Armors
+    'leather_helmet': {
+        'name': 'leather_helmet',
+        'image': 'assets/items/leather_helmet.png',
+        'equip': [0],
+        'baseArmor': 2,
+        'baseMagic': 0,
+        'baseDamage': 0,
+        'baseStrength': 0,
+        'baseAgility': 0,
+        'baseIntelligence': 0,
+        'scalling': 1,
+        'passive': 'none',
+        'sell': 1,
+    },
+    'leather_gloves': {
+        'name': 'leather_gloves',
+        'image': 'assets/items/leather_gloves.png',
+        'equip': [4, 5],
+        'baseArmor': 1,
+        'baseMagic': 0,
+        'baseDamage': 0,
+        'baseStrength': 0,
+        'baseAgility': 0,
+        'baseIntelligence': 0,
+        'scalling': 2,
+        'passive': 'none',
+        'sell': 1,
+    },
+    'leather_chestplate': {
+        'name': 'leather_chestplate',
+        'image': 'assets/items/leather_chestplate.png',
+        'equip': [6],
+        'baseArmor': 5,
+        'baseMagic': 0,
+        'baseDamage': 0,
+        'baseStrength': 0,
+        'baseAgility': 0,
+        'baseIntelligence': 0,
+        'scalling': 0.5,
+        'passive': 'none',
+        'sell': 1,
+    },
+    'leather_boots': {
+        'name': 'leather_boots',
+        'image': 'assets/items/leather_boots.png',
+        'equip': [8],
+        'baseArmor': 2,
+        'baseMagic': 0,
+        'baseDamage': 0,
+        'baseStrength': 0,
+        'baseAgility': 0,
+        'baseIntelligence': 0,
+        'scalling': 1,
+        'passive': 'none',
+        'sell': 1,
+    },
+    'bones_amulet': {
+        'name': 'bones_amulet',
+        'image': 'assets/items/bones_amulet.png',
+        'equip': [3],
+        'baseArmor': 0,
+        'baseMagic': 0,
+        'baseDamage': 0,
+        'baseStrength': 2,
+        'baseAgility': 0,
+        'baseIntelligence': 0,
+        'scalling': 0.5,
+        'passive': 'none',
+        'sell': 1,
+    },
+}
+class SkillsFunctions {
+    //Skill Translate
+    static skillTranslate(playerStats, skillName) {
+        switch (skillName) {
+            case 'basicAttack': return SkillsFunctions.basicAttack(playerStats[0]);
+            case 'furiousAttack': return SkillsFunctions.furiousAttack(playerStats[0], playerStats[1], playerStats[6]);
+        }
+    }
+    //Basic Attack
+    static basicAttack(damage) {
+        return {
+            'damage': damage,
+            '=life': null,
+            '-life': null,
+            '+life': null,
+            '=armor': null,
+            '-armor': null,
+            '+armor': null,
+            '=mana': null,
+            '-mana': null,
+            '+mana': null,
+            '=strength': null,
+            '-strength': null,
+            '+strength': null,
+            '=agility': null,
+            '-agility': null,
+            '+agility': null,
+            '=intelligence': null,
+            '-intelligence': null,
+            '+intelligence': null,
+        };
+    }
+    //Furious Attack
+    static furiousAttack(damage, life, maxLife) {
+        //Reduces 10% Max life
+        life = life - (maxLife * 0.1);
+        var losedLife = maxLife * 0.1;
+        if (life <= 0.1) {
+            life = 0.1;
+        }
+        //100% Damage Bonus
+        damage = damage * 2;
+        return {
+            'damage': damage.toFixed(2),
+            '=life': life.toFixed(2),
+            '-life': losedLife.toFixed(2),
+            '+life': null,
+            '=armor': null,
+            '-armor': null,
+            '+armor': null,
+            '=mana': null,
+            '-mana': null,
+            '+mana': null,
+            '=strength': null,
+            '-strength': null,
+            '+strength': null,
+            '=agility': null,
+            '-agility': null,
+            '+agility': null,
+            '=intelligence': null,
+            '-intelligence': null,
+            '+intelligence': null,
+        };
+    }
+}
+class PassivesFunctions {
+    //Passive Translate
+    static passiveTranslate(playerStats, passiveName) {
+        switch (passiveName) {
+            case 'healthTurbo': return PassivesFunctions.healthTurbo(playerStats[6], playerStats[1]);
+            case 'damageTurbo': return PassivesFunctions.damageTurbo(playerStats[0], playerStats[6], playerStats[1]);
+            case 'magicalBlock': return PassivesFunctions.magicalBlock();
+            case 'petsBlock': return PassivesFunctions.magicalBlock();
+            case 'noisy': return PassivesFunctions.magicalBlock();
+        }
+    }
+    //Health Turbo
+    static healthTurbo(maxLife, life) {
+        //Variables Creation
+        var porcentage = parseFloat((((maxLife - life) / maxLife) * 100).toFixed(2));
+
+        //Porcentage Calculation
+        var totalLifeRecovery = 0.0;
+        for (var i = 100.0 - porcentage; i <= 100; i += 2) {
+            totalLifeRecovery += maxLife * 0.005;
+        }
+
+        //Modification
+        totalLifeRecovery = parseFloat(totalLifeRecovery.toFixed(2));
+        life = life + totalLifeRecovery;
+        life = parseFloat(life.toFixed(2));
+        if (life > maxLife) {
+            life = maxLife;
+        }
+
+        //Returning
+        return {
+            'damage': null,
+            '=life': life,
+            '-life': null,
+            '+life': totalLifeRecovery,
+            '=armor': null,
+            '-armor': null,
+            '+armor': null,
+            '=mana': null,
+            '-mana': null,
+            '+mana': null,
+            '=strength': null,
+            '-strength': null,
+            '+strength': null,
+            '=agility': null,
+            '-agility': null,
+            '+agility': null,
+            '=intelligence': null,
+            '-intelligence': null,
+            '+intelligence': null,
+        };
+    }
+    //Damage Turbo
+    static damageTurbo(damage, maxLife, life) {
+        //Variables Creation
+        var porcentage = (((maxLife - life) / maxLife) * 100).toFixed(2);
+        var totalDamage = 0.0;
+
+        //Porcentage Calculation
+        for (var i = 100.0 - porcentage; i <= 100; i += 5) {
+            totalDamage += damage * 0.03;
+        }
+
+        totalDamage = totalDamage.toFixed(2);
+
+        //Returning
+        return {
+            'damage': damage + parseFloat(totalDamage),
+            '=life': null,
+            '-life': null,
+            '+life': null,
+            '=armor': null,
+            '-armor': null,
+            '+armor': null,
+            '=mana': null,
+            '-mana': null,
+            '+mana': null,
+            '=strength': null,
+            '-strength': null,
+            '+strength': null,
+            '=agility': null,
+            '-agility': null,
+            '+agility': null,
+            '=intelligence': null,
+            '-intelligence': null,
+            '+intelligence': null,
+        };
+    }
+    //Magical Block
+    static magicalBlock() {
+        return {
+            'damage': null,
+            '=life': null,
+            '-life': null,
+            '+life': null,
+            '=armor': null,
+            '-armor': null,
+            '+armor': null,
+            '=mana': null,
+            '-mana': null,
+            '+mana': null,
+            '=strength': null,
+            '-strength': null,
+            '+strength': null,
+            '=agility': null,
+            '-agility': null,
+            '+agility': null,
+            '=intelligence': null,
+            '-intelligence': null,
+            '+intelligence': null,
+        };
+    }
+}
+class SystemFunctions {
+
+    //Character Total Damage
+    static playerTotalDamage(damage, actualStrength) {
+        var strengthDamage = actualStrength / 100;
+        var totalDamage = damage + (damage * strengthDamage);
+        return totalDamage.toFixed(2);
+    }
+
+    //Character Max Life
+    static playerMaxLife(characterClass, actualStrength) {
+        //Pickup base Max life
+        var maxLife = baseAtributes[characterClass]['life'];
+        //Calculation by strength
+        for (var i = 0; i < actualStrength; i++) {
+            maxLife = maxLife + (maxLife * 0.05);
+        }
+        //Rounded Life
+        maxLife = maxLife.toFixed(2);
+        return maxLife;
+    }
+
+    //Armor Porcentage
+    static armorPorcentageCalculator(armor) {
+        //Limit Armor
+        if (armor >= 680) {
+            return 90.0;
+        }
+        if (armor <= 20) {
+            armor = armor / 2;
+            return armor.toFixed(1);
+        } else if (armor <= 50 && armor >= 21) {
+            const basePorcentage = 10.0;
+            armor = (armor / 3) + basePorcentage;
+            return armor.toFixed(1);
+        } else if (armor <= 150 && armor >= 51) {
+            const basePorcentage = 26.6;
+            armor = (armor / 5) + basePorcentage;
+            return armor.toFixed(1);
+        } else {
+            const basePorcentage = 56.6;
+            armor = (armor / 20) + basePorcentage;
+            return armor.toFixed(1);
+        }
+    }
+
+    //Calculates the item tier
+    static calculatesItemTier(itemName) {
+        //Calculation Variables
+        const name = itemName.substring(0, itemName.length - 3);
+        const scalling = itemsId[name]['scalling'];
+        const tier = itemName.slice(itemName.length - 2);
+        var itemAtributes = itemsId[name];
+        //Calculation
+        itemAtributes['name'] = itemName;
+        itemAtributes['baseArmor'] = itemAtributes['baseArmor'] + ((itemAtributes['baseArmor'] * scalling) * tier);
+        itemAtributes['baseMagic'] = itemAtributes['baseMagic'] + ((itemAtributes['baseMagic'] * scalling) * tier);
+        itemAtributes['baseDamage'] = itemAtributes['baseDamage'] + ((itemAtributes['baseDamage'] * scalling) * tier);
+        itemAtributes['baseStrength'] = itemAtributes['baseStrength'] + ((itemAtributes['baseStrength'] * scalling) * tier);
+        itemAtributes['baseAgility'] = itemAtributes['baseAgility'] + ((itemAtributes['baseAgility'] * scalling) * tier);
+        itemAtributes['baseIntelligence'] = itemAtributes['baseIntelligence'] + ((itemAtributes['baseIntelligence'] * scalling) * tier);
+        return itemAtributes;
+    }
+
+    //Calculates the player equipments stats
+    static calculatesPlayerEquipmentsStats(equip) {
+
+    }
+}
 
 //Ports for the server
 app.listen(8080, () => {
