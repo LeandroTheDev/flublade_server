@@ -64,85 +64,100 @@ app.post('/createAcc', async (req, res) => {
 
 //Login
 app.post('/login', async (req, res) => {
+    try {
+        //Pickup from database  profile info
+        const user = await accounts.findOne({
+            attributes: ['id', 'username', 'password', 'language', 'characters', 'token'],
+            where: {
+                username: req.body.username,
+            }
+        });
 
-    //Pickup from database  profile info
-    const user = await accounts.findOne({
-        attributes: ['id', 'username', 'password', 'language', 'characters', 'token'],
-        where: {
-            username: req.body.username,
+        //Credentials check
+        if (true) {
+            //Incorrect username check
+            if (user === null) {
+                return res.status(400).json({
+                    error: true,
+                    message: 'Wrong Credentials'
+                });
+            }
+            //Incorrect password check
+            if (!(await bcrypt.compare(req.body.password, user.password))) {
+                return res.status(400).json({
+                    error: true,
+                    message: 'Wrong Credentials'
+                });
+            }
         }
-    });
 
-    //Credentials check
-    if (true) {
-        //Incorrect username check
-        if (user === null) {
-            return res.status(400).json({
-                error: true,
-                message: 'Wrong Credentials'
-            });
-        }
-        //Incorrect password check
-        if (!(await bcrypt.compare(req.body.password, user.password))) {
-            return res.status(400).json({
-                error: true,
-                message: 'Wrong Credentials'
-            });
-        }
+        //Token creation
+        user.token = jwt.sign({ id: user.id }, 'GenericTokenPassword(1wWeRtyK243Mmnkjxz23zs)', {});
+
+        //Save in database
+        await user.save();
+
+        //Success Login
+        console.log('Player Logged: ' + user.username);
+        return res.json({
+            error: false,
+            message: 'Success',
+            id: user.id,
+            username: user.username,
+            language: user.language,
+            characters: user.characters,
+            token: user.token
+        });
+    } catch (error) {
+        return res.status(400).json({
+            error: true,
+            message: 'Wrong Credentials'
+        });
     }
-
-    //Token creation
-    user.token = jwt.sign({ id: user.id }, 'GenericTokenPassword(1wWeRtyK243Mmnkjxz23zs)', {});
-
-    //Save in database
-    await user.save();
-
-    //Success Login
-    console.log('Player Logged: ' + user.username);
-    return res.json({
-        error: false,
-        message: 'Success',
-        id: user.id,
-        username: user.username,
-        language: user.language,
-        characters: user.characters,
-        token: user.token
-    });
 });
 
 //Login Remember
 app.post('/loginRemember', async (req, res) => {
+    try {
+        //Pickup from database  profile info
+        const user = await accounts.findOne({
+            attributes: ['id', 'username', 'password', 'language', 'characters', 'token'],
+            where: {
+                id: req.body.id,
+            }
+        });
 
-    //Pickup from database  profile info
-    const user = await accounts.findOne({
-        attributes: ['id', 'username', 'password', 'language', 'characters', 'token'],
-        where: {
-            id: req.body.id,
+        //Token check
+        if (req.body.token != user.token) {
+            user.token = jwt.sign({ id: user.id }, 'GenericTokenPassword(1wWeRtyK243Mmnkjxz23zs)', {});
+            await user.save();
+            return res.status(400).json({
+                error: true,
+                message: 'Invalid Login'
+            });
         }
-    });
 
-    //Token check
-    if (req.body.token != user.token) {
+        //Token recreation
+        user.token = jwt.sign({ id: user.id }, 'GenericTokenPassword(1wWeRtyK243Mmnkjxz23zs)', {});
+        await user.save();
+
+        //Success Login
+        console.log('Player Logged: ' + user.username);
+        return res.json({
+            error: false,
+            message: 'Success',
+            id: user.id,
+            username: user.username,
+            language: user.language,
+            characters: user.characters,
+            token: user.token
+        });
+    } catch (error) {
         return res.status(400).json({
             error: true,
             message: 'Invalid Login'
         });
     }
-    //Token recreation
-    user.token = jwt.sign({ id: user.id }, 'GenericTokenPassword(1wWeRtyK243Mmnkjxz23zs)', {});
-    await user.save();
-
-    //Success Login
-    console.log('Player Logged: ' + user.username);
-    return res.json({
-        error: false,
-        message: 'Success',
-        id: user.id,
-        username: user.username,
-        language: user.language,
-        characters: user.characters,
-        token: user.token
-    });
 });
 
 //Update Language
@@ -157,6 +172,8 @@ app.post('/updateLanguage', async (req, res) => {
 
     //Token check
     if (req.body.token != user.token) {
+        user.token = jwt.sign({ id: user.id }, 'GenericTokenPassword(1wWeRtyK243Mmnkjxz23zs)', {});
+        await user.save();
         return res.status(400).json({
             error: true,
             message: 'Invalid Login'
@@ -193,6 +210,8 @@ app.post('/getCharacters', async (req, res) => {
 
         //Token check
         if (req.body.token != user.token) {
+            user.token = jwt.sign({ id: user.id }, 'GenericTokenPassword(1wWeRtyK243Mmnkjxz23zs)', {});
+            await user.save();
             return res.status(400).json({
                 error: true,
                 message: 'Invalid Login'
@@ -238,6 +257,8 @@ app.post('/removeCharacters', async (req, res) => {
 
         //Token check
         if (req.body.token != user.token) {
+            user.token = jwt.sign({ id: user.id }, 'GenericTokenPassword(1wWeRtyK243Mmnkjxz23zs)', {});
+            await user.save();
             return res.status(400).json({
                 error: true,
                 message: 'Invalid Login'
@@ -323,6 +344,8 @@ app.post('/createCharacters', async (req, res) => {
 
         //Token check
         if (req.body.token != user.token) {
+            user.token = jwt.sign({ id: user.id }, 'GenericTokenPassword(1wWeRtyK243Mmnkjxz23zs)', {});
+            await user.save();
             return res.status(400).json({
                 error: true,
                 message: 'Invalid Login'
@@ -338,15 +361,17 @@ app.post('/createCharacters', async (req, res) => {
                 'life': SystemFunctions.playerMaxLife(req.body.class, baseAtributes[req.body.class]['strength']),
                 'mana': baseAtributes[req.body.class].mana,
                 'armor': baseAtributes[req.body.class].armor,
+                'magicArmor': baseAtributes[req.body.class].magicArmor,
                 'level': 1,
                 'xp': 0,
                 'skillpoint': 0,
-                'damage': 1,
+                'damage': SystemFunctions.playerTotalDamage(1, baseAtributes[req.body.class].strength, false),
                 'strength': baseAtributes[req.body.class].strength,
                 'agility': baseAtributes[req.body.class].agility,
                 'intelligence': baseAtributes[req.body.class].intelligence,
                 'inventory': {},
                 'buffs': baseAtributes[req.body.class].buffs,
+                'debuffs': [],
                 'skills': baseAtributes[req.body.class].skills,
                 'equips': [
                     'none',
@@ -416,6 +441,8 @@ app.post('/updateCharacters', async (req, res) => {
 
         //Token check
         if (req.body.token != user.token) {
+            user.token = jwt.sign({ id: user.id }, 'GenericTokenPassword(1wWeRtyK243Mmnkjxz23zs)', {});
+            await user.save();
             return res.status(400).json({
                 error: true,
                 message: 'Invalid Login'
@@ -484,9 +511,13 @@ app.post('/attackEnemy', async (req, res) => {
     try {
         //Variables Declaration
         var enemyLife = req.body.enemyLife;
+        var enemyMana = req.body.enemyMana;
+        var enemyMaxLife = req.body.enemyMaxLife;
+        var enemyMaxMana = req.body.enemyMaxMana;
         var enemyArmor = req.body.enemyArmor;
-        const enemyMana = req.body.enemyMana;
-        const enemyDamage = req.body.enemyDamage;
+        var enemyBuffs = req.body.enemyBuffs;
+        var enemySkills = req.body.enemySkills;
+        var enemyDamage = req.body.enemyDamage;
         const enemyName = req.body.enemyName;
         const enemyXP = req.body.enemyXP;
         const enemyLevel = req.body.enemyLevel;
@@ -503,6 +534,8 @@ app.post('/attackEnemy', async (req, res) => {
 
         //Token check
         if (req.body.token != user.token) {
+            user.token = jwt.sign({ id: user.id }, 'GenericTokenPassword(1wWeRtyK243Mmnkjxz23zs)', {});
+            await user.save();
             return res.status(400).json({
                 error: true,
                 message: 'Invalid Login'
@@ -514,10 +547,11 @@ app.post('/attackEnemy', async (req, res) => {
             //Converting Character
             var characters = JSON.parse(user.characters);
             var character = characters['character' + req.body.selectedCharacter];
-            //Converting player stats
-            var playerStatsSkill = [character['damage'], parseFloat(character['life']), parseFloat(character['mana']), character['strength'], character['agility'], character['intelligence'], SystemFunctions.playerMaxLife(character['class'], character['strength'])];
-            const baseStatsSkill = [character['damage'], character['life'], character['mana'], character['strength'], character['agility'], character['intelligence'], SystemFunctions.playerMaxLife(character['class'], character['strength'])];
+            //Converting stats
+            const baseStatsSkill = [parseFloat(character['damage']), parseFloat(character['life']), parseFloat(character['mana']), parseFloat(character['strength']), parseFloat(character['agility']), parseFloat(character['intelligence']), SystemFunctions.playerMaxLife(character['class'], character['strength'])];
+            var playerStatsSkill = baseStatsSkill;
             var lateBuffs = [];
+            var enemyLateBuffs = [];
 
             //Player Turn
             if (true) {
@@ -590,16 +624,193 @@ app.post('/attackEnemy', async (req, res) => {
             }
             //Enemy Turn
             if (true) {
-                //Damage Calculation
-                const playerArmor = SystemFunctions.armorPorcentageCalculator(character['armor']);
-                character['life'] = character['life'] - (enemyDamage * ((100 - playerArmor) / 100));
-                //Add batlelog
-                battleLog[battleLog.length] = {
-                    'log1': 'battle_log_enemyAttack1',
-                    'log2': (enemyDamage * ((100 - playerArmor) / 100)),
-                    'log3': 'battle_log_enemyAttack2',
-                    'log4': 'enemy_' + enemyName,
-                };
+                //Converting stats
+                var enemyStatsSkills = [enemyDamage, parseFloat(enemyLife), parseFloat(enemyMana), null, null, null, parseFloat(enemyMaxLife), parseFloat(enemyMaxMana), 1];
+                //Check if enemy is already dead, else attack
+                if (enemyLife > 0) {
+                    //Enemy Passive
+                    if (true) {
+                        //Passives
+                        var buffs = Object.values(enemyBuffs);
+                        for (var i = 0; i < buffs.length; i++) {
+                            //Verify if passive is late
+                            if (!skillsId[buffs[i]]['isLate']) {
+                                var stats = PassivesFunctions.passiveTranslate(enemyStatsSkills, buffs[i]);
+                                //Damage Passive
+                                if (stats['damage'] != null) {
+                                    enemyDamage = stats['damage'];
+                                }
+                                //Life Passive
+                                if (stats['=life'] != null) {
+                                    enemyLife = stats['=life'];
+                                    if (stats['+life'] != null) {
+                                        //Add batlelog
+                                        battleLog[battleLog.length] = {
+                                            'log1': 'battle_log_playerHealed1',
+                                            'log2': stats['+life'],
+                                            'log3': 'battle_log_playerHealed2',
+                                        };
+                                    }
+                                }
+                            } else {
+                                //Add late buff to late buffs variable
+                                enemyLateBuffs[enemyLateBuffs.length] = buffs[i];
+                            }
+                        }
+                    }
+                    //Enemy Attack
+                    if (true) {
+                        var skills = Object.values(enemySkills);
+                        var ignoreAttack = false;
+                        //Skill
+                        for (var i = 0; i < skills.length; i++) {
+                            if (2 < Math.floor(Math.random() * 10)) {
+                                var selected = Math.floor(Math.random() * skills.length);
+                                enemyStatsSkills[8] = skills[selected]['tier'];
+                                var stats = SkillsFunctions.skillTranslate(enemyStatsSkills, skills[selected]['name']);
+
+                                //Rules
+                                if (true) {
+                                    if (enemyMana < stats['-mana']) {
+                                        break;
+                                    }
+                                }
+
+                                //Debuffs Skill
+                                if (stats['enemyDebuffs'] != null) {
+                                    for (var a = 0; a < stats['enemyDebuffs'].length; a++) {
+                                        var alreadyAdded = false;
+                                        //Verify if is stackable
+                                        if (skillsId[stats['enemyDebuffs'][a]['name']]['isStackable']) {
+                                            //Scan if already added
+                                            for (var b = 0; b < character['debuffs'].length; b++) {
+                                                //If already exist add stack
+                                                if (stats['enemyDebuffs'][a]['name'] == character['debuffs'][b]['name']) {
+                                                    character['debuffs'][b]['stack'] = character['debuffs'][b]['stack'] + 1;
+                                                    character['debuffs'][b]['rounds'] = stats['enemyDebuffs'][a]['rounds'];
+                                                    //Add batlelog
+                                                    battleLog[battleLog.length] = {
+                                                        'log1': 'enemy_' + enemyName,
+                                                        'log2': 'battle_log_enemyDebuffed1',
+                                                        'log3': 'magics_' + skills[selected]['name'],
+                                                        'log4': 'battle_log_enemyDebuffed2',
+                                                    };
+                                                    alreadyAdded = true;
+                                                    break;
+                                                }
+                                            }
+                                            //If not added
+                                            if (!alreadyAdded) {
+                                                character['debuffs'].push(stats['enemyDebuffs'][a]);
+                                                character['debuffs'][b]['stack'] = 1;
+                                                //Add batlelog
+                                                battleLog[battleLog.length] = {
+                                                    'log1': 'enemy_' + enemyName,
+                                                    'log2': 'battle_log_enemyDebuffed1',
+                                                    'log3': 'magics_' + skills[selected]['name'],
+                                                    'log4': 'battle_log_enemyDebuffed2',
+                                                };
+                                            }
+                                        } else {
+                                            //Scan if already added
+                                            for (var b = 0; b < character['debuffs'].length; b++) {
+                                                //If already exist reset rounds
+                                                if (stats['enemyDebuffs'][a]['name'] == character['debuffs'][b]['name']) {
+                                                    character['debuffs'][b]['rounds'] = stats['enemyDebuffs'][a]['rounds'];
+                                                    alreadyAdded = true;
+                                                    //Add batlelog
+                                                    battleLog[battleLog.length] = {
+                                                        'log1': 'enemy_' + enemyName,
+                                                        'log2': 'battle_log_enemyDebuffed1',
+                                                        'log3': 'magics_' + skills[selected]['name'],
+                                                        'log4': 'battle_log_enemyDebuffed2',
+                                                    };
+                                                    break;
+                                                }
+                                            }
+                                            //If not add
+                                            if (!alreadyAdded) {
+                                                //Added in debuffs
+                                                stats['enemyDebuffs'][a]['stack'] = 1;
+                                                character['debuffs'].push(stats['enemyDebuffs'][a]);
+                                                //Add batlelog
+                                                battleLog[battleLog.length] = {
+                                                    'log1': 'enemy_' + enemyName,
+                                                    'log2': 'battle_log_enemyDebuffed1',
+                                                    'log3': 'magics_' + skills[selected]['name'],
+                                                    'log4': 'battle_log_enemyDebuffed2',
+                                                };
+                                            }
+                                        }
+                                    }
+                                }
+                                //Damage Skill
+                                if (stats['damage'] != null) {
+                                    character['life'] = character['life'] - stats['damage'];
+                                    //Add batlelog
+                                    battleLog[battleLog.length] = {
+                                        'log1': 'battle_log_enemyAttack1',
+                                        'log2': stats['damage'],
+                                        'log3': 'battle_log_enemyAttack2',
+                                        'log4': 'enemy_' + enemyName,
+                                    };
+                                }
+                                //Reduce Mana Skill
+                                if (stats['-mana'] != null) {
+                                    enemyMana = enemyMana - stats['-mana'];
+                                }
+                                ignoreAttack = true;
+                            }
+                        }
+                        //Basic Attack
+                        if (!ignoreAttack) {
+                            //Damage Calculation
+                            const playerArmor = SystemFunctions.armorPorcentageCalculator(character['armor']);
+                            character['life'] = character['life'] - (enemyDamage * ((100 - playerArmor) / 100));
+                            //Add batlelog
+                            battleLog[battleLog.length] = {
+                                'log1': 'battle_log_enemyAttack1',
+                                'log2': (enemyDamage * ((100 - playerArmor) / 100)),
+                                'log3': 'battle_log_enemyAttack2',
+                                'log4': 'enemy_' + enemyName,
+                            };
+                        }
+                    }
+
+                    //Enemy Debuffs Application
+                    if (true) {
+
+                    }
+                }
+
+                //Player Debuffs Application
+                if (true) {
+                    for (var i = 0; i < character['debuffs'].length; i++) {
+                        playerStatsSkill[8] = character['debuffs'][i]['tier'];
+                        playerStatsSkill[9] = character['debuffs'][i]['stack'];
+                        var stats = PassivesFunctions.passiveTranslate(playerStatsSkill, character['debuffs'][i]['name']);
+                        //Life reduction debuff
+                        if (stats['-life'] != null) {
+                            character['life'] = character['life'] - stats['-life'];
+                            character['debuffs'][i]['rounds'] = character['debuffs'][i]['rounds'] - 1;
+                            //Add batlelog
+                            battleLog[battleLog.length] = {
+                                'log1': 'battle_log_playerDebuffReceived1',
+                                'log2': stats['-life'],
+                                'log3': 'battle_log_playerDebuffReceived2',
+                                'log4': 'magics_' + character['debuffs'][i]['name'],
+                            };
+                            //If rounds is 0 then delete from debuffs
+                            if (character['debuffs'][i]['rounds'] < 1) {
+                                for (var a = i; a < character['debuffs'].length; a++) {
+                                    character['debuffs'][i] = character['debuffs'][a + 1];
+                                }
+                                character['debuffs'].pop();
+                            }
+                        }
+                    }
+                }
+
                 //Refresh Stats
                 playerStatsSkill = [character['damage'], parseFloat(character['life']), parseFloat(character['mana']), character['strength'], character['agility'], character['intelligence'], SystemFunctions.playerMaxLife(character['class'], character['strength'])];
                 //Check if player Dead
@@ -607,8 +818,13 @@ app.post('/attackEnemy', async (req, res) => {
                     battleLog[battleLog.length] = {
                         'log1': 'battle_log_playerDead',
                     };
-                    //Reset Player Life
+                    //Reset Player Stats
                     character['life'] = SystemFunctions.playerMaxLife(character['class'], character['strength']);
+                    character['debuffs'] = [];
+                    character['damage'] = baseStatsSkill[0];
+                    character['strength'] = baseStatsSkill[3];
+                    character['agility'] = baseStatsSkill[4];
+                    character['intelligence'] = baseStatsSkill[5];
                     characters['character' + req.body.selectedCharacter] = character;
                     user.characters = characters;
                     await user.save();
@@ -626,7 +842,32 @@ app.post('/attackEnemy', async (req, res) => {
                         battleLog: battleLog,
                     });
                 }
-                //Late Passive
+
+                //Enemy Late Passives
+                if (true) {
+                    for (var i = 0; i < enemyLateBuffs.length; i++) {
+                        var stats = PassivesFunctions.passiveTranslate(enemyStatsSkills, enemyLateBuffs[i]);
+                        //Damage Passive
+                        if (stats['damage'] != null) {
+                            enemyDamage = stats['damage'];
+                        }
+                        //Life Passive
+                        if (stats['=life'] != null) {
+                            enemyLife = stats['=life'];
+                            if (stats['+life'] != null) {
+                                //Add batlelog
+                                battleLog[battleLog.length] = {
+                                    'log1': 'enemy_' + enemyName,
+                                    'log2': 'battle_log_enemyHealed1',
+                                    'log3': stats['+life'],
+                                    'log4': 'battle_log_enemyHealed2',
+                                    'log5': 'magics_' + enemyLateBuffs[i],
+                                };
+                            }
+                        }
+                    }
+                }
+                //Player Late Passives
                 if (true) {
                     for (var i = 0; i < lateBuffs.length; i++) {
                         var stats = PassivesFunctions.passiveTranslate(playerStatsSkill, lateBuffs[i]['name']);
@@ -650,12 +891,14 @@ app.post('/attackEnemy', async (req, res) => {
                 }
             }
 
-            //Bonus stats to default
+            //Save Stats
             if (true) {
                 character['damage'] = baseStatsSkill[0];
                 character['strength'] = baseStatsSkill[3];
                 character['agility'] = baseStatsSkill[4];
                 character['intelligence'] = baseStatsSkill[5];
+                characters['character' + req.body.selectedCharacter] = character;
+                user.characters = characters;
             }
 
             //Loot
@@ -753,9 +996,7 @@ app.post('/attackEnemy', async (req, res) => {
                     }
                 }
             }
-            //Save Stats
-            characters['character' + req.body.selectedCharacter] = character;
-            user.characters = characters;
+
             //Save on database
             await user.save();
 
@@ -782,8 +1023,6 @@ app.post('/attackEnemy', async (req, res) => {
                     earnedXP: xp,
                 });
             }
-
-
         }
 
         //Continue
@@ -802,7 +1041,7 @@ app.post('/attackEnemy', async (req, res) => {
     } catch (error) {
         return res.status(400).json({
             error: true,
-            message: 'Invalid Login'
+            message: 'Invalid Login',
         });
     }
 });
@@ -874,6 +1113,38 @@ app.post('/gameplayStats', async (req, res) => {
     }
 });
 
+app.post('/playerStats', async (req, res) => {
+
+    //Pickup Characters Infos
+    const user = await accounts.findOne({
+        attributes: ['id', 'username', 'characters', 'token'],
+        where: {
+            id: req.body.id,
+        }
+    });
+
+    //Token check
+    if (req.body.token != user.token) {
+        user.token = jwt.sign({ id: user.id }, 'GenericTokenPassword(1wWeRtyK243Mmnkjxz23zs)', {});
+        await user.save();
+        return res.status(400).json({
+            error: true,
+            message: 'Invalid Login'
+        });
+    }
+    const character = JSON.parse(user.characters)['character' + req.body.selectedCharacter];
+
+    //Continue
+    return res.json({
+        error: false,
+        message: 'Success',
+        playerDamage: character['damage'],
+        playerMaxLife: SystemFunctions.playerMaxLife(character['class'], character['strength']),
+        playerMaxMana: 0,
+        playerDebuffs: character['debuffs'],
+    });
+});
+
 app.post('/changeEquip', async (req, res) => {
     const equipped = req.body.equipped;
 
@@ -887,6 +1158,8 @@ app.post('/changeEquip', async (req, res) => {
 
     //Token check
     if (req.body.token != user.token) {
+        user.token = jwt.sign({ id: user.id }, 'GenericTokenPassword(1wWeRtyK243Mmnkjxz23zs)', {});
+        await user.save();
         return res.status(400).json({
             error: true,
             message: 'Invalid Login'
@@ -903,10 +1176,13 @@ app.post('/changeEquip', async (req, res) => {
         if (true) {
             //Verifiy if exist in inventory
             if (selectedCharacter['inventory'][selectedCharacter['equips'][req.body.index]['name']] == null) {
+                //Add into inventory
                 selectedCharacter['inventory'][selectedCharacter['equips'][req.body.index]['name']] = selectedCharacter['equips'][req.body.index];
-                //Add a quantity
+                selectedCharacter = SystemFunctions.calculatesPlayerEquipmentsStats(selectedCharacter['equips'][req.body.index], selectedCharacter, true);
             } else {
+                //Add a quantity
                 selectedCharacter['inventory'][selectedCharacter['equips'][req.body.index]['name']]['quantity'] = selectedCharacter['inventory'][selectedCharacter['equips'][req.body.index]['name']]['quantity'] + 1;
+                selectedCharacter = SystemFunctions.calculatesPlayerEquipmentsStats(selectedCharacter['equips'][req.body.index], selectedCharacter, true);
             }
         }
         //Remove from equipment
@@ -923,79 +1199,90 @@ app.post('/changeEquip', async (req, res) => {
         });
     }
 
-    //Inconsistent Check (Not in Inventory)
-    if (selectedCharacter['inventory'][equipped['name']]['name'] != equipped['name']) {
-        return res.status(400).json({
-            error: true,
-            message: 'Invalid Login'
-        });
-    }
-
-    //Adding on Equipment and Removing from Inventory
+    //Equip
     if (true) {
-        //Inconsistent Check (Not in correct index)
+        //Inconsistent Check (Not in Inventory)
+        if (selectedCharacter['inventory'][equipped['name']]['name'] != equipped['name']) {
+            return res.status(400).json({
+                error: true,
+                message: 'Invalid Login'
+            });
+        }
+
+        //Adding on Equipment and Removing from Inventory
         if (true) {
-            //Verify Tier
-            var tier = 0;
-            var name = equipped['name'];
-            if (equipped['name'].includes('%')) {
-                tier = parseInt(equipped['name'].slice(-2));
-                name = equipped['name'].substring(0, equipped['name'].length - 3);
-            }
-            //Index Verification
-            const index = itemsId[name]['equip'];
-            if (index.length > 1) {
-                var isConsistent = false;
-                for (var i = 0; i < index.length; i++) {
-                    if (index[i] == req.body.index) {
-                        isConsistent = true;
+            //Inconsistent Check (Not in correct index)
+            if (true) {
+                //Verify Tier
+                var tier = 0;
+                var name = equipped['name'];
+                if (equipped['name'].includes('%')) {
+                    tier = parseInt(equipped['name'].slice(-2));
+                    name = equipped['name'].substring(0, equipped['name'].length - 3);
+                }
+                //Index Verification
+                const index = itemsId[name]['equip'];
+                if (index.length > 1) {
+                    var isConsistent = false;
+                    for (var i = 0; i < index.length; i++) {
+                        if (index[i] == req.body.index) {
+                            isConsistent = true;
+                        }
+                    }
+                    if (isConsistent == false) {
+                        return res.status(400).json({
+                            error: true,
+                            message: 'Invalid Login'
+                        });
+                    }
+                } else {
+                    if (index != req.body.index) {
+                        return res.status(400).json({
+                            error: true,
+                            message: 'Invalid Login'
+                        });
                     }
                 }
-                if (isConsistent == false) {
-                    return res.status(400).json({
-                        error: true,
-                        message: 'Invalid Login'
-                    });
+            }
+            //If a weapon is already equipped, unequip it
+            if (selectedCharacter['equips'][req.body.index] != 'none') {
+                if (selectedCharacter['inventory'][selectedCharacter['equips'][req.body.index]['name']]['quantity'] >= 1) {
+                    //Add quantity
+                    selectedCharacter['inventory'][selectedCharacter['equips'][req.body.index]['name']]['quantity'] = selectedCharacter['inventory'][selectedCharacter['equips'][req.body.index]['name']]['quantity'] + 1;
+                    selectedCharacter = SystemFunctions.calculatesPlayerEquipmentsStats(selectedCharacter['equips'][req.body.index], selectedCharacter, false);
+                } else {
+                    //Add in inventory
+                    selectedCharacter['inventory'][selectedCharacter['equips'][req.body.index]['name']] = selectedCharacter['equips'][req.body.index];
+                    selectedCharacter = SystemFunctions.calculatesPlayerEquipmentsStats(selectedCharacter['equips'][req.body.index], selectedCharacter, false);
                 }
-            } else {
-                if (index != req.body.index) {
-                    return res.status(400).json({
-                        error: true,
-                        message: 'Invalid Login'
-                    });
+            }
+            //Adding in equipment
+            selectedCharacter['equips'][req.body.index] = equipped;
+            //Removing from inventory
+            if (true) {
+                if (selectedCharacter['inventory'][equipped['name']]['quantity'] > 1) {
+                    //Remove 1 quantity
+                    selectedCharacter['inventory'][equipped['name']]['quantity'] = selectedCharacter['inventory'][equipped['name']]['quantity'] - 1;
+                    selectedCharacter = SystemFunctions.calculatesPlayerEquipmentsStats(equipped, selectedCharacter, false);
+                } else {
+                    //Removes from inventory
+                    delete selectedCharacter['inventory'][equipped['name']];
+                    selectedCharacter = SystemFunctions.calculatesPlayerEquipmentsStats(equipped, selectedCharacter, false);
                 }
             }
         }
-        //If a weapon is already equipped, unequip it
-        if (selectedCharacter['equips'][req.body.index] != 'none') {
-            if (selectedCharacter['inventory'][selectedCharacter['equips'][req.body.index]['name']]['quantity'] >= 1) {
-                selectedCharacter['inventory'][selectedCharacter['equips'][req.body.index]['name']]['quantity'] = selectedCharacter['inventory'][selectedCharacter['equips'][req.body.index]['name']]['quantity'] + 1;
-            } else {
-                selectedCharacter['inventory'][selectedCharacter['equips'][req.body.index]['name']] = selectedCharacter['equips'][req.body.index];
-            }
-        }
-        //Adding in equipment
-        selectedCharacter['equips'][req.body.index] = equipped;
-        //Removing from inventory
-        if (true) {
-            if (selectedCharacter['inventory'][equipped['name']]['quantity'] > 1) {
-                selectedCharacter['inventory'][equipped['name']]['quantity'] = selectedCharacter['inventory'][equipped['name']]['quantity'] - 1;
-            } else {
-                delete selectedCharacter['inventory'][equipped['name']];
-            }
-        }
+
+        //Database Save
+        characters['character' + req.body.selectedCharacter] = selectedCharacter;
+        user.characters = JSON.stringify(characters);
+        await user.save();
+
+        //Sucess
+        return res.json({
+            error: false,
+            message: 'Success',
+        });
     }
-
-    //Database Save
-    characters['character' + req.body.selectedCharacter] = selectedCharacter;
-    user.characters = JSON.stringify(characters);
-    await user.save();
-
-    //Sucess
-    return res.json({
-        error: false,
-        message: 'Success',
-    });
 
 });
 
@@ -1064,63 +1351,64 @@ const skillsId = {
         'isLate': false,
         'type': 'physical',
         'image': 'assets/skills/furiousAttack.png',
-        'costType': '-life',
-        'costQuantity': '5%',
+    },
+    'poisonous': {
+        'name': 'poisonous',
+        'createBuff': '',
+        'buffRounds': 0,
+        'isLate': false,
+        'type': 'toxic',
+        'image': 'assets/skills/poisonous.png',
     },
     //Passives
     'healthTurbo': {
-        'image': 'assets/skills/passives/healthTurbo',
+        'image': 'assets/skills/passives/healthTurbo.png',
         'name': 'healthTurbo',
         'isLate': true,
         'type': 'life',
-        'image': 'assets/skills/furiousAttack.png',
-        'costType': '+life',
-        'costQuantity': 'none',
         'isStackable': false,
         'isHide': false,
     },
     'damageTurbo': {
-        'image': 'assets/skills/passives/damageTurbo',
+        'image': 'assets/skills/passives/damageTurbo.png',
         'name': 'damageTurbo',
         'isLate': false,
-        'type': 'damage',
-        'image': 'assets/skills/furiousAttack.png',
-        'costType': '+damage',
-        'costQuantity': 'none',
+        'type': 'physical',
         'isStackable': false,
         'isHide': false,
     },
     'magicalBlock': {
+        'image': 'assets/skills/passives/magicalBlock.png',
         'name': 'magicalBlock',
-        'rounds': 'racial',
         'isLate': false,
         'type': 'block',
-        'image': 'assets/skills/magicalBlock.png',
-        'costType': 'none',
-        'costQuantity': 'none',
         'isStackable': false,
-        'isHide': false,
+        'isHide': true,
     },
     'petsBlock': {
+        'image': 'assets/skills/passives/petsBlock.png',
         'name': 'petsBlock',
-        'rounds': 'racial',
         'isLate': false,
         'type': 'block',
-        'image': 'assets/skills/petsBlock.png',
-        'costType': 'none',
-        'costQuantity': 'none',
         'isStackable': false,
-        'isHide': false,
+        'isHide': true,
     },
     'noisy': {
+        'image': 'assets/skills/passives/noisy.png',
         'name': 'noisy',
-        'rounds': 'racial',
         'isLate': false,
         'type': 'block',
-        'image': 'assets/skills/noisy.png',
         'costType': 'none',
         'costQuantity': 'none',
         'isStackable': false,
+        'isHide': true,
+    },
+    'poisoned': {
+        'image': 'assets/skills/poisonous.png',
+        'name': 'poisoned',
+        'isLate': true,
+        'type': 'toxic',
+        'isStackable': true,
         'isHide': false,
     },
 }
@@ -1148,6 +1436,8 @@ const baseAtributes = {
         'mana': 5,
         'armor': 0,
         'armorLevel': 1,
+        'magicArmor': 0,
+        'magicArmorLevel': 0,
         'strength': 12,
         'strengthLevel': 2,
         'agility': 6,
@@ -1168,7 +1458,7 @@ const baseAtributes = {
     }
 }
 const lootDropRate = {
-    
+
     'smallspider': {
         '0': 'gold',
         '0Chance': 50,
@@ -1344,9 +1634,21 @@ const itemsId = {
 class SkillsFunctions {
     //Skill Translate
     static skillTranslate(playerStats, skillName) {
+        //Documentation
+        //0 Damage
+        //1 Actual Life
+        //2 Actual Mana
+        //3 Strength
+        //4 Agility
+        //5 Intelligence
+        //6 Max Life
+        //7 Max Mana
+        //8 Skill Tier
+        //9 Skill Stacks
         switch (skillName) {
             case 'basicAttack': return SkillsFunctions.basicAttack(playerStats[0]);
             case 'furiousAttack': return SkillsFunctions.furiousAttack(playerStats[0], playerStats[1], playerStats[6]);
+            case 'poisonous': return SkillsFunctions.poisonous(playerStats[8]);
         }
     }
     //Basic Attack
@@ -1371,6 +1673,10 @@ class SkillsFunctions {
             '=intelligence': null,
             '-intelligence': null,
             '+intelligence': null,
+            'buffs': null,
+            'debuffs': null,
+            'enemyBuffs': null,
+            'enemyDebuffs': null,
         };
     }
     //Furious Attack
@@ -1403,6 +1709,41 @@ class SkillsFunctions {
             '=intelligence': null,
             '-intelligence': null,
             '+intelligence': null,
+            'buffs': null,
+            'debuffs': null,
+            'enemyBuffs': null,
+            'enemyDebuffs': null,
+        };
+    }
+    //Poisonous
+    static poisonous(tier) {
+        const damage = 2 * tier;
+        const rounds = 3;
+        const cost = 1 * tier;
+        return {
+            'damage': damage,
+            '=life': null,
+            '-life': null,
+            '+life': null,
+            '=armor': null,
+            '-armor': null,
+            '+armor': null,
+            '=mana': null,
+            '-mana': cost,
+            '+mana': null,
+            '=strength': null,
+            '-strength': null,
+            '+strength': null,
+            '=agility': null,
+            '-agility': null,
+            '+agility': null,
+            '=intelligence': null,
+            '-intelligence': null,
+            '+intelligence': null,
+            'buffs': null,
+            'debuffs': null,
+            'enemyBuffs': null,
+            'enemyDebuffs': [{ 'name': 'poisoned', 'rounds': rounds, 'tier': tier, 'image': skillsId['poisoned']['image'] }],
         };
     }
 }
@@ -1410,11 +1751,23 @@ class PassivesFunctions {
     //Passive Translate
     static passiveTranslate(playerStats, passiveName) {
         switch (passiveName) {
+            //Documentation
+            //0 Damage
+            //1 Actual Life
+            //2 Actual Mana
+            //3 Strength
+            //4 Agility
+            //5 Intelligence
+            //6 Max Life
+            //7 Max Mana
+            //8 Skill Tier
+            //9 Skill Stacks
             case 'healthTurbo': return PassivesFunctions.healthTurbo(playerStats[6], playerStats[1]);
             case 'damageTurbo': return PassivesFunctions.damageTurbo(playerStats[0], playerStats[6], playerStats[1]);
             case 'magicalBlock': return PassivesFunctions.magicalBlock();
             case 'petsBlock': return PassivesFunctions.magicalBlock();
             case 'noisy': return PassivesFunctions.magicalBlock();
+            case 'poisoned': return PassivesFunctions.poisoned(playerStats[8], playerStats[9]);
         }
     }
     //Health Turbo
@@ -1457,6 +1810,10 @@ class PassivesFunctions {
             '=intelligence': null,
             '-intelligence': null,
             '+intelligence': null,
+            'buffs': null,
+            'debuffs': null,
+            'enemyBuffs': null,
+            'enemyDebuffs': null,
         };
     }
     //Damage Turbo
@@ -1464,7 +1821,6 @@ class PassivesFunctions {
         //Variables Creation
         var porcentage = (((maxLife - life) / maxLife) * 100).toFixed(2);
         var totalDamage = 0.0;
-
         //Porcentage Calculation
         for (var i = 100.0 - porcentage; i <= 100; i += 5) {
             totalDamage += damage * 0.03;
@@ -1493,6 +1849,38 @@ class PassivesFunctions {
             '=intelligence': null,
             '-intelligence': null,
             '+intelligence': null,
+            'buffs': null,
+            'debuffs': null,
+            'enemyBuffs': null,
+            'enemyDebuffs': null,
+        };
+    }
+    //Poisoned
+    static poisoned(tier, stacks) {
+        return {
+            'damage': null,
+            '=life': null,
+            '-life': (2 * tier) * stacks,
+            '+life': null,
+            '=armor': null,
+            '-armor': null,
+            '+armor': null,
+            '=mana': null,
+            '-mana': null,
+            '+mana': null,
+            '=strength': null,
+            '-strength': null,
+            '+strength': null,
+            '=agility': null,
+            '-agility': null,
+            '+agility': null,
+            '=intelligence': null,
+            '-intelligence': null,
+            '+intelligence': null,
+            'buffs': null,
+            'debuffs': null,
+            'enemyBuffs': null,
+            'enemyDebuffs': null,
         };
     }
     //Magical Block
@@ -1517,15 +1905,24 @@ class PassivesFunctions {
             '=intelligence': null,
             '-intelligence': null,
             '+intelligence': null,
+            'buffs': null,
+            'debuffs': null,
+            'enemyBuffs': null,
+            'enemyDebuffs': null,
         };
     }
 }
 class SystemFunctions {
 
     //Character Total Damage
-    static playerTotalDamage(damage, actualStrength) {
+    static playerTotalDamage(damage, actualStrength, isRemove) {
         var strengthDamage = actualStrength / 100;
         var totalDamage = damage + (damage * strengthDamage);
+        if (isRemove) {
+            var strengthDamage = actualStrength / 100;
+            var totalDamage = damage - (damage * strengthDamage);
+            return totalDamage.toFixed(2);
+        }
         return totalDamage.toFixed(2);
     }
 
@@ -1585,8 +1982,26 @@ class SystemFunctions {
     }
 
     //Calculates the player equipments stats
-    static calculatesPlayerEquipmentsStats(equip) {
-
+    static calculatesPlayerEquipmentsStats(equip, character, isRemove) {
+        //Remove Stats Else Add
+        if (isRemove) {
+            character['damage'] = SystemFunctions.playerTotalDamage(character['damage'], character['strength'], true);
+            character['damage'] = character['damage'] - equip['baseDamage'];
+            character['armor'] = character['armor'] - equip['baseArmor'];
+            character['magicArmor'] = character['magicArmor'] - equip['baseMagic'];
+            character['strength'] = character['strength'] - equip['baseStrength'];
+            character['agility'] = character['agility'] - equip['baseAgility'];
+            character['intelligence'] = character['intelligence'] - equip['baseIntelligence'];
+        } else {
+            character['armor'] = character['armor'] + equip['baseArmor'];
+            character['magicArmor'] = character['magicArmor'] + equip['baseMagic'];
+            character['strength'] = character['strength'] + equip['baseStrength'];
+            character['agility'] = character['agility'] + equip['baseAgility'];
+            character['intelligence'] = character['intelligence'] + equip['baseIntelligence'];
+            character['damage'] = character['damage'] + equip['baseDamage'];
+            character['damage'] = SystemFunctions.playerTotalDamage(character['damage'], character['strength'], false);
+        }
+        return character;
     }
 }
 
