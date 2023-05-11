@@ -3,7 +3,7 @@ const Sequelize = require('sequelize');
 const db = require('./db');
 
 //Database tables
-const world = db.define('world', {
+const worlds = db.define('worlds', {
     id_world: {
         type: Sequelize.INTEGER,
         allowNull: false,
@@ -14,6 +14,11 @@ const world = db.define('world', {
         type: 'varchar(50)',
         allowNull: false,
         defaultValue: 'null'
+    },
+    event: {
+        type: 'longtext',
+        allowNull: false,
+        defaultValue: '{}'
     },
     npc: {
         type: 'longtext',
@@ -535,4 +540,4 @@ const world = db.define('world', {
 });
 
 //Exports globally
-module.exports = world;
+module.exports = worlds;

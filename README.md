@@ -20,7 +20,7 @@ The servers will work together with flublade_project but if exists inconsistenci
 
 
 
-- After that the server needs the dependencies, download the dependencies with "npm install name"
+- After that the server needs the dependencies, download the [dependencies](https://github.com/LeandroTheDev/flublade_backend/tree/main#dependencies) with "npm install name"
 - And then the server is ready
 - Write in terminal "node app.js" to start server
 
