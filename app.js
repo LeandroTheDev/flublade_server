@@ -4,9 +4,9 @@ const jwt = require('jsonwebtoken');
 const express = require('express');
 const app = express();
 //Dependecies External
-const { eAdmin } = require('./middlewares/auth');
 const accounts = require('./models/accounts');
 const worlds = require('./models/worlds');
+const websocket = require('./models/websocket');
 
 //Enable json post
 app.use(express.json());
@@ -2055,7 +2055,7 @@ class SystemFunctions {
         }
         //Calculates again damage for every equip item
         for (var i = 0; i <= itemEquipped.length - 1; i++) {
-            if(itemEquipped[i]['baseDamage'] != 0) {
+            if (itemEquipped[i]['baseDamage'] != 0) {
                 baseDamage = SystemFunctions.playerTotalDamage(baseDamage, actualStrength, false, itemEquipped[i]['baseDamage']);
             }
         }
@@ -2156,3 +2156,11 @@ class SystemFunctions {
 app.listen(8080, () => {
     console.log('Server started in ports 8080: http://localhost:8080');
 });
+
+
+//------
+//WebSocket
+//------
+
+//Start Websocket
+websocket;
