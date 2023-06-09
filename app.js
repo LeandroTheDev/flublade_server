@@ -1733,6 +1733,7 @@ const itemsId = {
         'sell': 1,
     },
 }
+
 //Returns the selected skill result
 class SkillsFunctions {
     //Skill Translate
@@ -2042,6 +2043,7 @@ class SystemFunctions {
         }
     }
 
+    //Calculates all items and player damage
     static refreshPlayerTotalDamage(actualStrength, equips) {
         const strengthDamage = actualStrength / 100;
         console.log(actualStrength);
@@ -2154,7 +2156,7 @@ class SystemFunctions {
 
 //Ports for the server
 app.listen(8080, () => {
-    console.log('Server started in ports 8080: http://localhost:8080');
+    console.log('Server http started in ports 8080: http://localhost:8080');
 });
 
 
@@ -2163,4 +2165,4 @@ app.listen(8080, () => {
 //------
 
 //Start Websocket
-websocket;
+const wss = websocket();

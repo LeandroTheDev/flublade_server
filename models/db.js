@@ -6,11 +6,7 @@ const sequelize = new Sequelize('flublade', 'flubladeAdmin', 'WVxDC*DCuBE8h!87af
     host: "192.168.0.18",
     dialect: "mariadb",
     logging: false,
-    dialectOptions: {
-        options: {
-            requestTimeout: 3000
-        }
-    },
+    connectTimeout: 10000,
 });
 
 //Connection Sucess
