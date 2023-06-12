@@ -3,10 +3,14 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const express = require('express');
 const app = express();
+const WebSocket = require("ws");
 //Dependecies External
 const accounts = require('./models/accounts');
 const worlds = require('./models/worlds');
-const websocket = require('./models/websocket');
+const webSocketIngame = require('./models/websocketIngame');
+const websocketIngameInitialize = webSocketIngame.webSocketIngameInitialize;
+const webSocketBattle = require('./models/websocketBattle');
+const webSocketBattleInitialize = webSocketBattle.webSocketBattleInitialize;
 
 //Enable json post
 app.use(express.json());
@@ -2164,5 +2168,8 @@ app.listen(8080, () => {
 //WebSocket
 //------
 
-//Start Websocket
-const wss = websocket();
+//Start Ingame Websocket
+const wssIngame = websocketIngameInitialize();
+
+//Start Battle Websocket
+const wssBattle = webSocketBattleInitialize();
