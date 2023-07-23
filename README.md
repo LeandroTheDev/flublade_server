@@ -1,10 +1,17 @@
 # Node.js Backend
 
-Server that uses http request.
+Server that uses http request and websocket system for continuous connections.
 
-This is a Backend Server, have password encryption, login system, token for security.
+Basic features:
+- Password encryption. 
+- Login system.
+- Token Validation.
+- Real time players moviment.
+- Real time enemy moviment.
 
-The servers will work together with flublade_project but if exists inconsistencies with client and server the server will return invalid login to the client, causing the client to lost connection to the game and returning to authetication page, and the servers will reset token.
+The servers will work together with flublade_project but if exists inconsistencies with the client and server the client will lost connection, causing the client returning to authetication page, and then servers will reset their token.
+
+Basic anti cheat detection, any example of the anti cheat is the player collide with any enemy, but in the server the player is too distant from the enemy and that doesnt make sense, so the server detects this and close the player connection.
 
 # Configuring own server
 
@@ -33,6 +40,6 @@ The servers will work together with flublade_project but if exists inconsistenci
 - npm install bcryptjs
 - npm install jsonwebtoken
 - npm install express
-- npm install mariadb
-- npm install mysql2
+- npm install mariadb/mysql2
 - npm install sequelize
+- npm install ws

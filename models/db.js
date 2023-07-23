@@ -3,7 +3,7 @@ const Sequelize = require('sequelize');
 
 //Database informations
 const sequelize = new Sequelize('flublade', 'flubladeAdmin', 'WVxDC*DCuBE8h!87af6Oxn^a9K&hdo5OUQUSfksRo@meIvFHlO', {
-    host: "192.168.0.18",
+    host: "192.168.0.23",
     dialect: "mariadb",
     logging: false,
     connectTimeout: 10000,
