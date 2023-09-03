@@ -6,6 +6,7 @@ const accounts = require("./accounts");
 const classes = require("./gameplay");
 
 const wss = new WebSocket.Server({ port: 8082 });
+
 //Variables
 let mapBattles = {};
 

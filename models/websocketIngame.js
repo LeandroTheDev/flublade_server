@@ -5,6 +5,7 @@ const worlds = require("./worlds");
 const accounts = require("./accounts");
 
 const wss = new WebSocket.Server({ port: 8081 });
+
 //Variables
 let playersOnline = {};
 let map = {};
@@ -29,7 +30,7 @@ async function readWorld(location) {
 //Enemy moving function
 function enemyMoving(positionX, positionY, epositionX, epositionY) {
     try {
-        const moveSpeed = 0.18;
+        const moveSpeed = 0.5;
         let directionX = "Direction.idle";
         let directionY = "Direction.idle";
         let moviment = [false, false, false, false];
@@ -169,7 +170,9 @@ wss.on("connection", async (ws, connectionInfo) => {
         let clientID = 0;
         let clientLocation = '';
 
-        //Connection Check
+        let tickWaitEnemyMoving = false;
+        let tickWaitPlayersPosition = false;
+        const serverTickDelay = 10;
 
         //Player Connection Continuous
         ws.on("message", async data => {
@@ -177,48 +180,59 @@ wss.on("connection", async (ws, connectionInfo) => {
             const req = JSON.parse(data);
 
             //Return to client world positions
-            if (req.message == "playersPosition" && validation) {
+            if (req.message == "playersPosition" && validation && !tickWaitPlayersPosition) {
+                tickWaitPlayersPosition = true;
+                let positionX = req.positionX.toFixed(15);
+                let positionY = req.positionY.toFixed(15);
                 //Update Player Infos
                 map[req.location][req.id] = {
                     'id': req.id,
-                    'positionX': req.positionX,
-                    'positionY': req.positionY,
+                    'positionX': positionX,
+                    'positionY': positionY,
                     'direction': req.direction,
                     'class': req.class,
                     'ip': clientIp
                 };
+                let test = map[req.location];
                 //Send to Client
-                ws.send(JSON.stringify(map[req.location]));
+                setTimeout(function () { tickWaitPlayersPosition = false; ws.send(JSON.stringify(map[req.location])); }, serverTickDelay);
             }
             //Enemy See the Player
-            if (req.message == "enemyMoving" && validation) {
+            if (req.message == "enemyMoving" && validation && !tickWaitEnemyMoving) {
                 try {
-                    //Stop Follow
+                    tickWaitEnemyMoving = true;
+                    // Stop Follow
                     if (!req.isSee) {
                         map[req.location]['enemy']['enemy' + req.enemyID]['isMove'] = 0;
                     }
-                    //Verify if the enemy is stopped
-                    if (map[req.location]['enemy']['enemy' + req.enemyID]['isMove'] == 0) {
-                        //If see
-                        if (req.isSee) {
-                            //Enemy start follow
-                            map[req.location]['enemy']['enemy' + req.enemyID]['isMove'] = req.id;
+                    const enemyArray = JSON.parse(req.enemyID);
+                    //Sweep All Enemies
+                    for (let i = 0; i < enemyArray.length; i++) {
+                        const enemyID = enemyArray[i];
+                        //Verify if the enemy is stopped
+                        if (map[req.location]['enemy']['enemy' + enemyID]['isMove'] == 0) {
+                            //If see
+                            if (req.isSee) {
+                                //Enemy start follow
+                                map[req.location]['enemy']['enemy' + enemyID]['isMove'] = req.id;
+                            }
+                        }
+                        //If is moving then
+                        if (map[req.location]['enemy']['enemy' + enemyID]['isMove'] == req.id) {
+                            //Pickup positions
+                            let positionX = map[req.location][req.id]['positionX'];
+                            let positionY = map[req.location][req.id]['positionY'];
+                            let epositionX = map[req.location]['enemy']['enemy' + enemyID]['positionX'];
+                            let epositionY = map[req.location]['enemy']['enemy' + enemyID]['positionY'];
+                            //Moving Calculation
+                            const positions = enemyMoving(positionX, positionY, epositionX, epositionY);
+                            //Add in map the new position and direction
+                            map[req.location]['enemy']['enemy' + enemyID]['positionX'] = positions[0];
+                            map[req.location]['enemy']['enemy' + enemyID]['positionY'] = positions[1];
+                            map[req.location]['enemy']['enemy' + enemyID]['direction'] = positions[2];
                         }
                     }
-                    //If is moving then
-                    if (map[req.location]['enemy']['enemy' + req.enemyID]['isMove'] == req.id) {
-                        //Pickup positions
-                        let positionX = map[req.location][req.id]['positionX'];
-                        let positionY = map[req.location][req.id]['positionY'];
-                        let epositionX = map[req.location]['enemy']['enemy' + req.enemyID]['positionX'];
-                        let epositionY = map[req.location]['enemy']['enemy' + req.enemyID]['positionY'];
-                        //Moving Calculation
-                        const positions = enemyMoving(positionX, positionY, epositionX, epositionY);
-                        //Add in map the new position and direction
-                        map[req.location]['enemy']['enemy' + req.enemyID]['positionX'] = positions[0];
-                        map[req.location]['enemy']['enemy' + req.enemyID]['positionY'] = positions[1];
-                        map[req.location]['enemy']['enemy' + req.enemyID]['direction'] = positions[2];
-                    }
+                    setTimeout(function () { tickWaitEnemyMoving = false; }, serverTickDelay);
                 } catch (error) {
                     console.log("Error: " + error.toString() + "\nby ID: " + req.id);
                     //Close connection
