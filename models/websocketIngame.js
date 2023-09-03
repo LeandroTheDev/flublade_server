@@ -7,6 +7,7 @@ const accounts = require("./accounts");
 const wss = new WebSocket.Server({ port: 8081 });
 
 //Variables
+const serverTickDelay = 10;
 let playersOnline = {};
 let map = {};
 
@@ -25,7 +26,6 @@ async function readWorld(location) {
     });
     return world['dataValues'];
 }
-
 
 //Enemy moving function
 function enemyMoving(positionX, positionY, epositionX, epositionY) {
@@ -167,12 +167,13 @@ wss.on("connection", async (ws, connectionInfo) => {
     try {
         const clientIp = connectionInfo.socket.remoteAddress;
         let validation = false;
+        //Client Informations
         let clientID = 0;
         let clientLocation = '';
 
+        //Client Tick Await
         let tickWaitEnemyMoving = false;
         let tickWaitPlayersPosition = false;
-        const serverTickDelay = 10;
 
         //Player Connection Continuous
         ws.on("message", async data => {
@@ -184,16 +185,15 @@ wss.on("connection", async (ws, connectionInfo) => {
                 tickWaitPlayersPosition = true;
                 let positionX = req.positionX.toFixed(15);
                 let positionY = req.positionY.toFixed(15);
-                //Update Player Infos
-                map[req.location][req.id] = {
-                    'id': req.id,
+                //Update Player Infos on the Map
+                map[clientLocation][clientID] = {
+                    'id': clientID,
                     'positionX': positionX,
                     'positionY': positionY,
                     'direction': req.direction,
                     'class': req.class,
-                    'ip': clientIp
+                    'battleID': playersOnline[clientID]['battleID'],
                 };
-                let test = map[req.location];
                 //Send to Client
                 setTimeout(function () { tickWaitPlayersPosition = false; ws.send(JSON.stringify(map[req.location])); }, serverTickDelay);
             }
@@ -250,10 +250,6 @@ wss.on("connection", async (ws, connectionInfo) => {
                 }
                 //Kill the enemy
                 map[actualLocation]['enemy']['enemy' + enemyID]['isDead'] = true;
-                //Verify if player already in battle
-                if (playersOnline[req.id]["isBattle"] == false) {
-                    playersOnline[req.id]["isBattle"] = true;
-                }
                 //Active timer to respawn
                 setTimeout(async () => {
                     if (map[actualLocation] != undefined) {
@@ -297,7 +293,7 @@ wss.on("connection", async (ws, connectionInfo) => {
                     "location": req.location,
                     "class": req.class,
                     "selectedCharacter": req.selectedCharacter,
-                    "isBattle": false,
+                    "battleID": -1,
                 };
                 //Update client info
                 clientID = req.id;
@@ -330,6 +326,11 @@ wss.on("connection", async (ws, connectionInfo) => {
     }
 });
 
+//Function to websocketInBattle update the battleID from playersOnline
+function changePlayerInBattle(clientID, battleID) {
+    playersOnline[clientID]['battleID'] = battleID;
+}
+
 module.exports = {
     webSocketIngameInitialize: async () => {
         setTimeout(async () => {
@@ -339,4 +340,5 @@ module.exports = {
     },
     map: map,
     playersOnline: playersOnline,
+    changePlayerInBattle: changePlayerInBattle,
 }

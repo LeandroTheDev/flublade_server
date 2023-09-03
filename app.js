@@ -8,10 +8,10 @@ const WebSocket = require("ws");
 const classes = require("./models/gameplay");
 const accounts = require('./models/accounts');
 const worlds = require('./models/worlds');
-const webSocketIngame = require('./models/websocketIngame');
-const websocketIngameInitialize = webSocketIngame.webSocketIngameInitialize;
 const webSocketBattle = require('./models/websocketBattle');
 const webSocketBattleInitialize = webSocketBattle.webSocketBattleInitialize;
+const webSocketIngame = require('./models/websocketIngame');
+const websocketIngameInitialize = webSocketIngame.webSocketIngameInitialize;
 
 //Enable json post
 app.use(express.json());
@@ -1408,7 +1408,7 @@ const itemsId = classes.itemsId;
 
 //Ports for the server
 app.listen(8080, () => {
-    console.log('Server http started in ports 8080: http://localhost:8080');
+    console.log('Server Responses started in ports 8080: http://localhost:8080');
 });
 
 

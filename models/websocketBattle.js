@@ -130,7 +130,8 @@ wss.on("connection", (ws, connectionInfo) => {
                     //Finish
                     battle[0] = req.location;
                     battle[1] = req.id;
-                    clientID = req.id
+                    clientID = req.id;
+                    webSocketIngame.changePlayerInBattle(clientID, battle[1]);
                     ws.send(JSON.stringify(mapBattles[req.location][req.id]));
                 }
                 //Incosistence Check //Player is already in battle
@@ -767,17 +768,19 @@ wss.on("connection", (ws, connectionInfo) => {
 
             if (req.message == "close") {
                 console.log("exited battle");
+                webSocketIngame.changePlayerInBattle(clientID, -1);
             }
         });
 
         ws.on("close", () => {
             //TO DO delete lobby
+            webSocketIngame.changePlayerInBattle(clientID, -1);
         })
     } catch (error) {
         console.log("%cBattle Server Exception:", "color: red");
         console.log(error);
     }
-})
+});
 
 module.exports = {
     webSocketBattleInitialize: async () => {
@@ -786,4 +789,5 @@ module.exports = {
             return wss;
         }, 300);
     },
+    mapBattles: mapBattles,
 }
