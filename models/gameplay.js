@@ -566,6 +566,7 @@ const baseAtributes = {
     },
     'berserk': {
         'life': 20,
+        'lifeRegen': 1,
         'mana': 5,
         'armor': 0,
         'armorLevel': 1,

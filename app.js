@@ -3,7 +3,6 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const express = require('express');
 const app = express();
-const WebSocket = require("ws");
 //Dependecies External
 const classes = require("./models/gameplay");
 const accounts = require('./models/accounts');
@@ -22,49 +21,64 @@ app.use(express.json());
 
 //Create account
 app.post('/createAcc', async (req, res) => {
-    var data = req.body;
-    //Account rules check
-    if (true) {
-        //Too small username
-        if (req.body.username.length < 3 || req.body.username.length > 20) {
+    try {
+        var data = req.body;
+        //Account rules check
+        if (true) {
+            //Too small username
+            if (req.body.username.length < 3 || req.body.username.length > 20) {
+                return res.status(400).json({
+                    error: true,
+                    message: 'Too small or too big username'
+                });
+            }
+            //Too small password
+            if (req.body.password.length < 3 || req.body.password.length > 100) {
+                return res.status(400).json({
+                    error: true,
+                    message: 'Too small password or too big password'
+                });
+            }
+        }
+        //Encrypte password
+        data.password = await bcrypt.hash(req.body.password, 8);
+        //Add in database
+        await accounts.create(data).then(() => {
+            //Account creation log
+            console.log('Account created: ' + data.username);
+            //Return to frontend
+            return res.json({
+                error: false,
+                message: 'Success',
+            });
+        }).catch((error) => {
+            //Username already taken
+            if (error['errors'][0]['message'].includes('username must be unique')) {
+                return res.status(400).json({
+                    error: true,
+                    message: 'Username already exists'
+                });
+            }
+            //Connection problems
+            console.log(
+                "Exception casued by " + req.body.username + "\n" +
+                error.toString()
+            );
             return res.status(400).json({
                 error: true,
-                message: 'Too small or too big username'
+                message: 'Server Crashed'
             });
-        }
-        //Too small password
-        if (req.body.password.length < 3 || req.body.password.length > 100) {
-            return res.status(400).json({
-                error: true,
-                message: 'Too small password or too big password'
-            });
-        }
-    }
-    //Encrypte password
-    data.password = await bcrypt.hash(req.body.password, 8);
-    //Add in database
-    await accounts.create(data).then(() => {
-        //Account creation log
-        console.log('Account created: ' + data.username);
-        //Return to frontend
-        return res.json({
-            error: false,
-            message: 'Success',
         });
-    }).catch((error) => {
-        //Username already taken
-        if (error['errors'][0]['message'].includes('username must be unique')) {
-            return res.status(400).json({
-                error: true,
-                message: 'Username already exists'
-            });
-        }
-        //Connection problems
+    } catch (error) {
+        console.log(
+            "Exception casued by " + req.body.username + "\n" +
+            error.toString()
+        );
         return res.status(400).json({
             error: true,
-            message: 'Unkown error'
+            message: 'Server Crashed'
         });
-    });
+    }
 });
 
 //Login
@@ -114,9 +128,13 @@ app.post('/login', async (req, res) => {
             token: user.token
         });
     } catch (error) {
+        console.log(
+            "Exception casued by " + req.body.username + "\n" +
+            error.toString()
+        );
         return res.status(400).json({
             error: true,
-            message: 'Wrong Credentials'
+            message: 'Server Crashed'
         });
     }
 });
@@ -158,52 +176,18 @@ app.post('/loginRemember', async (req, res) => {
             token: user.token
         });
     } catch (error) {
+        console.log(
+            "Exception casued by ID " + req.body.id + "\n" +
+            error.toString()
+        );
         return res.status(400).json({
             error: true,
-            message: 'Invalid Login'
+            message: 'Server Crashed'
         });
     }
 });
 
 //Update Language
-app.post('/updateLanguage', async (req, res) => {
-    try {
-        //Pickup from database  profile info
-        const user = await accounts.findOne({
-            attributes: ['id', 'language', 'token'],
-            where: {
-                id: req.body.id,
-            }
-        });
-
-        //Token check
-        if (req.body.token != user.token) {
-            user.token = jwt.sign({ id: user.id }, 'GenericTokenPassword(1wWeRtyK243Mmnkjxz23zs)', {});
-            await user.save();
-            return res.status(400).json({
-                error: true,
-                message: 'Invalid Login'
-            });
-        }
-
-        //Save on database
-        user.language = req.body.language;
-        await user.save();
-
-        //Success
-        return res.json({
-            error: false,
-            message: 'Success',
-        });
-    } catch (error) {
-        return res.status(400).json({
-            error: true,
-            message: 'Invalid Login'
-        });
-    }
-});
-
-
 
 //------
 //Menu
@@ -251,7 +235,7 @@ app.post('/getCharacters', async (req, res) => {
     } catch (error) {
         return res.status(400).json({
             error: true,
-            message: 'Invalid Login'
+            message: 'Server Crashed'
         });
     }
 });
@@ -278,29 +262,29 @@ app.post('/removeCharacters', async (req, res) => {
         }
 
         //Removing character
-        const json = JSON.parse(user.characters);
+        const characters = JSON.parse(user.characters);
         var i = req.body.index;
         while (true) {
             //Remove character
             if (i == req.body.index) {
-                console.log('Character Deleted: ' + json['character' + i]['name'] + ', Level: ' + json['character' + i]['level'] + ', Username: ' + user.username);
-                delete json['character' + i];
+                console.log('Character Deleted: ' + characters['character' + i]['name'] + ', Level: ' + characters['character' + i]['level'] + ', Username: ' + user.username);
+                delete characters['character' + i];
             }
             //Subsequent index
             var a = i + 1;
             //Subsequent break verification
-            if (json['character' + a] == null) {
+            if (characters['character' + a] == null) {
                 a = a - 1;
-                delete json['character' + a];
+                delete characters['character' + a];
                 break;
             }
             //Lowering the character index of subsequent characters
-            json['character' + i] = json['character' + a];
+            characters['character' + i] = characters['character' + a];
             i++;
         }
 
         //Save on database
-        user.characters = JSON.stringify(json);
+        user.characters = JSON.stringify(characters);
         await user.save();
 
         //Success
@@ -311,9 +295,13 @@ app.post('/removeCharacters', async (req, res) => {
         });
         //Error Treatment
     } catch (error) {
+        console.log(
+            "Exception casued by ID" + req.body.id + "\n" +
+            error.toString()
+        );
         return res.status(400).json({
             error: true,
-            message: 'Invalid Login'
+            message: 'Server Crashed'
         });
     }
 });
@@ -364,64 +352,147 @@ app.post('/createCharacters', async (req, res) => {
             });
         }
         //Adding character
-        var json = {};
         if (true) {
-            json = JSON.parse(user.characters);
-            json['character' + Object.keys(json).length] = {
+            const playerClass = req.body.class;
+            const playerBody = req.body.body;
+            let characters = JSON.parse(user.characters);
+            characters['character' + Object.keys(characters).length] = {
                 'name': req.body.name,
-                'class': req.body.class,
-                'life': classes.SystemFunctions.playerMaxLife(req.body.class, baseAtributes[req.body.class]['strength']),
-                'mana': baseAtributes[req.body.class].mana,
-                'armor': baseAtributes[req.body.class].armor,
-                'magicArmor': baseAtributes[req.body.class].magicArmor,
+                'class': playerClass,
                 'level': 1,
-                'xp': 0,
+                'experience': 0,
                 'skillpoint': 0,
-                'damage': classes.SystemFunctions.playerTotalDamage(1, baseAtributes[req.body.class].strength, false),
-                'strength': baseAtributes[req.body.class].strength,
-                'agility': baseAtributes[req.body.class].agility,
-                'intelligence': baseAtributes[req.body.class].intelligence,
+                'equipmentStatus': {
+                    //Stats
+                    'life': 0,
+                    'lifeRegen': 0,
+                    'mana': 0,
+                    'manaRegen': 0,
+                    'strength': 0,
+                    'agility': 0,
+                    'intelligence': 0,
+                    //Damage
+                    'physical': 0,
+                    'ranged': 0,
+                    'magic': 0,
+                    'physicalAmplification': 0,
+                    'rangedAmplification': 0,
+                    'magicalAmplification': 0,
+                    'fireAmplification': 0,
+                    'waterAmplification': 0,
+                    'natureAmplification': 0,
+                    'lightAmplification': 0,
+                    'darkAmplification': 0,
+                    //Defence
+                    'physicalResistence': 0,
+                    'magicalResistence': 0,
+                    'fireResistence': 0,
+                    'waterResistence': 0,
+                    'natureResistence': 0,
+                    'lightResistence': 0,
+                    'darkResistence': 0,
+                    'physicalResistenceAmplification': 0,
+                    'magicalResistenceAmplification': 0,
+                    'fireResistenceAmplification': 0,
+                    'waterResistenceAmplification': 0,
+                    'natureResistenceAmplification': 0,
+                    'lightResistenceAmplification': 0,
+                    'darkResistenceAmplification': 0,
+                },
+                'classStatus': {
+                    //Stats
+                    'life': classes.SystemFunctions.playerMaxLife(req.body.class, baseAtributes[req.body.class]['strength']),
+                    'lifeRegen': baseAtributes[req.body.class].lifeRegen,
+                    'mana': baseAtributes[req.body.class].mana,
+                    'manaRegen': baseAtributes[req.body.class].manaRegen,
+                    'strength': baseAtributes[req.body.class].strength,
+                    'agility': baseAtributes[req.body.class].agility,
+                    'intelligence': baseAtributes[req.body.class].intelligence,
+                    //Damage
+                    'physical': baseAtributes[req.body.class].physical,
+                    'ranged': baseAtributes[req.body.class].ranged,
+                    'physicalAmplification': baseAtributes[req.body.class].physicalAmplification,
+                    'rangedAmplification': baseAtributes[req.body.class].rangedAmplification,
+                    'magicalAmplification': baseAtributes[req.body.class].magicalAmplification,
+                    'fireAmplification': baseAtributes[req.body.class].fireAmplification,
+                    'waterAmplification': baseAtributes[req.body.class].waterAmplification,
+                    'natureAmplification': baseAtributes[req.body.class].natureAmplification,
+                    'lightAmplification': baseAtributes[req.body.class].lightAmplification,
+                    'darkAmplification': baseAtributes[req.body.class].darkAmplification,
+                    //Defence
+                    'physicalResistence': baseAtributes[req.body.class].physicalResistence,
+                    'magicalResistence': baseAtributes[req.body.class].magicalResistence,
+                    'fireResistence': baseAtributes[req.body.class].fireResistence,
+                    'waterResistence': baseAtributes[req.body.class].waterResistence,
+                    'natureResistence': baseAtributes[req.body.class].natureResistence,
+                    'lightResistence': baseAtributes[req.body.class].lightResistence,
+                    'darkResistence': baseAtributes[req.body.class].darkResistence,
+                    'physicalResistenceAmplification': baseAtributes[req.body.class].physicalResistenceAmplification,
+                    'magicalResistenceAmplification': baseAtributes[req.body.class].magicalResistenceAmplification,
+                    'fireResistenceAmplification': baseAtributes[req.body.class].fireResistenceAmplification,
+                    'waterResistenceAmplification': baseAtributes[req.body.class].waterResistenceAmplification,
+                    'natureResistenceAmplification': baseAtributes[req.body.class].natureResistenceAmplification,
+                    'lightResistenceAmplification': baseAtributes[req.body.class].lightResistenceAmplification,
+                    'darkResistenceAmplification': baseAtributes[req.body.class].darkResistenceAmplification,
+                },
+                'characterStatus': {
+                    //Stats
+                    'life': classes.SystemFunctions.playerMaxLife(req.body.class, baseAtributes[req.body.class]['strength']),
+                    'lifeRegen': baseAtributes[req.body.class].lifeRegen,
+                    'mana': baseAtributes[req.body.class].mana,
+                    'manaRegen': baseAtributes[req.body.class].manaRegen,
+                    'strength': baseAtributes[req.body.class].strength,
+                    'agility': baseAtributes[req.body.class].agility,
+                    'intelligence': baseAtributes[req.body.class].intelligence,
+                    //Damage
+                    'physical': baseAtributes[req.body.class].physical,
+                    'ranged': baseAtributes[req.body.class].ranged,
+                    'physicalAmplification': baseAtributes[req.body.class].physicalAmplification,
+                    'rangedAmplification': baseAtributes[req.body.class].rangedAmplification,
+                    'magicalAmplification': baseAtributes[req.body.class].magicalAmplification,
+                    'fireAmplification': baseAtributes[req.body.class].fireAmplification,
+                    'waterAmplification': baseAtributes[req.body.class].waterAmplification,
+                    'natureAmplification': baseAtributes[req.body.class].natureAmplification,
+                    'lightAmplification': baseAtributes[req.body.class].lightAmplification,
+                    'darkAmplification': baseAtributes[req.body.class].darkAmplification,
+                    //Defence
+                    'physicalResistence': baseAtributes[req.body.class].physicalResistence,
+                    'magicalResistence': baseAtributes[req.body.class].magicalResistence,
+                    'fireResistence': baseAtributes[req.body.class].fireResistence,
+                    'waterResistence': baseAtributes[req.body.class].waterResistence,
+                    'natureResistence': baseAtributes[req.body.class].natureResistence,
+                    'lightResistence': baseAtributes[req.body.class].lightResistence,
+                    'darkResistence': baseAtributes[req.body.class].darkResistence,
+                    'physicalResistenceAmplification': baseAtributes[req.body.class].physicalResistenceAmplification,
+                    'magicalResistenceAmplification': baseAtributes[req.body.class].magicalResistenceAmplification,
+                    'fireResistenceAmplification': baseAtributes[req.body.class].fireResistenceAmplification,
+                    'waterResistenceAmplification': baseAtributes[req.body.class].waterResistenceAmplification,
+                    'natureResistenceAmplification': baseAtributes[req.body.class].natureResistenceAmplification,
+                    'lightResistenceAmplification': baseAtributes[req.body.class].lightResistenceAmplification,
+                    'darkResistenceAmplification': baseAtributes[req.body.class].darkResistenceAmplification,
+                },
                 'inventory': {},
-                'buffs': baseAtributes[req.body.class].buffs,
-                'debuffs': [],
+                'equips': {},
+                'race': req.body.race,
+                'stats': baseAtributes[req.body.class].buffs,
                 'skills': baseAtributes[req.body.class].skills,
-                'equips': [
-                    'none',
-                    'none',
-                    'none',
-                    'none',
-                    'none',
-                    'none',
-                    'none',
-                    'none',
-                    'none',
-                    'none',
-                    'none',
-                    'none',
-                    'none',
-                    'none',
-                    'none',
-                    'none',
-                    'none',
-                    'none',
-                    'none',
-                    'none',
-                    'none',
-                    'none',
-                    'none',
-                    'none',
-                    'none',
-                    'none',
-                    'none',
-                    'none'
-                ],
-                'location': 'prologue001',
+                'body' : {
+                    'hair': playerBody.hair,
+                    'hairColor': playerBody.hairColor,
+                    'eyes': playerBody.eyes,
+                    'eyesColor': playerBody.eyesColor,
+                    'mouth': playerBody.mouth,
+                    'mouthColor': playerBody.mouthColor,
+                    'skin': playerBody.skin,
+                    'skinColor': playerBody.skinColor,
+                },
+                'location': 'prologue_spawn',
             };
             console.log('Character Created: ' + req.body.name + ', Class: ' + req.body.class + ', Username: ' + user.username);
         }
 
         //Save on database
-        user.characters = JSON.stringify(json);
+        user.characters = JSON.stringify(characters);
         await user.save();
 
         //Success
@@ -432,80 +503,10 @@ app.post('/createCharacters', async (req, res) => {
         });
         //Error Treatment
     } catch (error) {
-        console.log(error);
-        return res.status(400).json({
-            error: true,
-            message: 'Invalid Login'
-        });
-    }
-});
-
-//Update account character
-app.post('/updateCharacters', async (req, res) => {
-    try {
-        //Pickup from database  profile info
-        const user = await accounts.findOne({
-            attributes: ['id', 'username', 'characters', 'token'],
-            where: {
-                id: req.body.id,
-            }
-        });
-
-        //Token check
-        if (req.body.token != user.token) {
-            user.token = jwt.sign({ id: user.id }, 'GenericTokenPassword(1wWeRtyK243Mmnkjxz23zs)', {});
-            await user.save();
-            return res.status(400).json({
-                error: true,
-                message: 'Invalid Login'
-            });
-        }
-
-        //Updating
-        var json = {};
-        if (true) {
-            //Is levelup?
-            if (req.body.isLevelUp) {
-                json = JSON.parse(user.characters)
-                json['character' + req.body.selectedCharacter]['strength'] = json['character' + req.body.selectedCharacter]['strength'] + baseAtributes[json['character' + req.body.selectedCharacter]['class']]['strengthLevel'];
-                json['character' + req.body.selectedCharacter]['agility'] = json['character' + req.body.selectedCharacter]['agility'] + baseAtributes[json['character' + req.body.selectedCharacter]['class']]['agilityLevel'];
-                json['character' + req.body.selectedCharacter]['intelligence'] = json['character' + req.body.selectedCharacter]['intelligence'] + baseAtributes[json['character' + req.body.selectedCharacter]['class']]['intelligenceLevel'];
-                json['character' + req.body.selectedCharacter]['armor'] = json['character' + req.body.selectedCharacter]['armor'] + baseAtributes[json['character' + req.body.selectedCharacter]['class']]['armorLevel'];
-                json['character' + req.body.selectedCharacter]['skillpoint'] = json['character' + req.body.selectedCharacter]['skillpoint'] + 1;
-                user.characters = JSON.stringify(json);
-            }
-            else {
-                json = JSON.parse(user.characters);
-                json['character' + req.body.selectedCharacter]['name'] = req.body.name;
-                json['character' + req.body.selectedCharacter]['life'] = req.body.life;
-                json['character' + req.body.selectedCharacter]['mana'] = req.body.mana;
-                json['character' + req.body.selectedCharacter]['armor'] = req.body.armor;
-                json['character' + req.body.selectedCharacter]['level'] = req.body.level;
-                json['character' + req.body.selectedCharacter]['xp'] = req.body.xp;
-                json['character' + req.body.selectedCharacter]['skillpoint'] = req.body.skillpoint;
-                json['character' + req.body.selectedCharacter]['strength'] = req.body.strength;
-                json['character' + req.body.selectedCharacter]['agility'] = req.body.agility;
-                json['character' + req.body.selectedCharacter]['intelligence'] = req.body.intelligence;
-                json['character' + req.body.selectedCharacter]['inventory'] = req.body.inventory;
-                json['character' + req.body.selectedCharacter]['buffs'] = req.body.buffs;
-                json['character' + req.body.selectedCharacter]['equips'] = req.body.equips;
-                json['character' + req.body.selectedCharacter]['location'] = req.body.location;
-                user.characters = JSON.stringify(json);
-            }
-        }
-
-        //Save on database
-        await user.save();
-
-        //Success
-        return res.json({
-            error: false,
-            message: 'Success',
-            characters: user.characters
-        });
-        //Error Treatment
-    } catch (error) {
-        console.log(error);
+        console.log(
+            "Exception casued by ID" + req.body.id + "\n" +
+            error.toString()
+        );
         return res.status(400).json({
             error: true,
             message: 'Invalid Login'
@@ -519,7 +520,7 @@ app.post('/updateCharacters', async (req, res) => {
 //Gameplay
 //------
 
-//When attacking enemy
+//When attacking enemy DEPRECATED
 app.post('/attackEnemy', async (req, res) => {
     try {
         //Variables Declaration
@@ -1076,115 +1077,6 @@ app.post('/attackEnemy', async (req, res) => {
             message: 'Invalid Login',
         });
     }
-});
-
-//Returns all server configuration
-app.post('/gameplayStats', async (req, res) => {
-    try {
-        //Returns All Stats
-        if (req.body.all) {
-            return res.json({
-                error: false,
-                message: 'Success',
-                baseAtributes: baseAtributes,
-                levelCaps: levelCaps,
-                skillsId: skillsId,
-                itemsId: itemsId,
-            });
-        }
-
-        //Return Base Atributes
-        if (req.body.baseAtributes) {
-            return res.json({
-                error: false,
-                message: 'Success',
-                baseAtributes: baseAtributes
-            });
-        }
-
-        //Return Level Caps
-        if (req.body.levelCaps) {
-            return res.json({
-                error: false,
-                message: 'Success',
-                levelCaps: levelCaps
-            });
-        }
-
-        //Return Skills Infos
-        if (req.body.skillsId) {
-            return res.json({
-                error: false,
-                message: 'Success',
-                skillsId: skillsId
-            });
-        }
-
-        //Return Items Infos
-        if (req.body.itemsId) {
-            return res.json({
-                error: false,
-                message: 'Success',
-                itemsId: itemsId
-            });
-        }
-
-        //Return server name
-        if (req.body.testConnection) {
-            return res.json({
-                error: false,
-                message: 'Success',
-                serverName: classes.SystemFunctions.serverName,
-            });
-        }
-
-        //Invalid Stats
-        return res.json({
-            error: false,
-            message: 'Invalid Login',
-            characters: levelCaps
-        });
-
-        //Error Treatment
-    } catch (error) {
-        return res.status(400).json({
-            error: true,
-            message: 'Invalid Login'
-        });
-    }
-});
-
-//Returns the player stats
-app.post('/playerStats', async (req, res) => {
-
-    //Pickup Characters Infos
-    const user = await accounts.findOne({
-        attributes: ['id', 'username', 'characters', 'token'],
-        where: {
-            id: req.body.id,
-        }
-    });
-
-    //Token check
-    if (req.body.token != user.token) {
-        user.token = jwt.sign({ id: user.id }, 'GenericTokenPassword(1wWeRtyK243Mmnkjxz23zs)', {});
-        await user.save();
-        return res.status(400).json({
-            error: true,
-            message: 'Invalid Login'
-        });
-    }
-    const character = JSON.parse(user.characters)['character' + req.body.selectedCharacter];
-
-    //Continue
-    return res.json({
-        error: false,
-        message: 'Success',
-        playerDamage: character['damage'],
-        playerMaxLife: classes.SystemFunctions.playerMaxLife(character['class'], character['strength']),
-        playerMaxMana: 0,
-        playerDebuffs: character['debuffs'],
-    });
 });
 
 //Change equipment

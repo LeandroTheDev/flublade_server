@@ -19,11 +19,6 @@ const accounts = db.define('accounts', {
         type: "varchar(500)",
         allowNull: false,
     },
-    language: {
-        type: "tinytext",
-        allowNull: false,
-        defaultValue: "en_US"
-    },
     characters: {
         type: "longtext",
         allowNull: false,
