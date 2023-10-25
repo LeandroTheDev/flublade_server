@@ -473,7 +473,7 @@ app.post('/createCharacters', async (req, res) => {
                 },
                 'inventory': {},
                 'equips': {},
-                'race': req.body.race,
+                'race': playerBody.race,
                 'stats': baseAtributes[req.body.class].buffs,
                 'skills': baseAtributes[req.body.class].skills,
                 'body' : {
@@ -485,6 +485,7 @@ app.post('/createCharacters', async (req, res) => {
                     'mouthColor': playerBody.mouthColor,
                     'skin': playerBody.skin,
                     'skinColor': playerBody.skinColor,
+                    'genere': playerBody.gender,
                 },
                 'location': 'prologue_spawn',
             };
@@ -1079,7 +1080,7 @@ app.post('/attackEnemy', async (req, res) => {
     }
 });
 
-//Change equipment
+//Change equipment DEPRECATED
 app.post('/changeEquip', async (req, res) => {
     const equipped = req.body.equipped;
 
