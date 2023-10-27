@@ -334,7 +334,7 @@ function changePlayerInBattle(clientID, battleID) {
 module.exports = {
     webSocketIngameInitialize: async () => {
         setTimeout(async () => {
-            console.log("Server Ingame started in ports 8081: ws://localhost:8081");
+            console.log("Server Ingame started in ports 8081");
             return wss;
         }, 200);
     },

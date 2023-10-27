@@ -43,3 +43,4 @@ Basic anti cheat detection, any example of the anti cheat is the player collide 
 - npm install mariadb/mysql2
 - npm install sequelize
 - npm install ws
+- npm install axios
