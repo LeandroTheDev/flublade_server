@@ -28,21 +28,22 @@ function startResponses() {
         connection.use((req, res, next) => {
             //Ip blocked
             if (ipTimeout[req.ip] == 99) {
-                res.status(413).send('Too many attempts');
+                res.status(413).send({ error: true, message: 'Too many attempts' });
                 return;
             }
 
             //Add a limiter for ips
-            if (ipTimeout[req.ip] == undefined) ipTimeout[req.ip] = 0;
+            if (ipTimeout[req.ip] == undefined) {
+                ipTimeout[req.ip] = 0 
+                //Reset Timer
+                setTimeout(function () {
+                    delete ipTimeout[req.ip];
+                }, 5000);
+            }
             else ipTimeout[req.ip] += 1;
 
             //If the ip try to communicate 3 times then
             if (ipTimeout[req.ip] > 3) ipTimeout[req.ip] = 99;
-
-            //Reset Timer
-            setTimeout(function () {
-                delete ipTimeout[req.ip];
-            }, 5000);
 
             next();
         });

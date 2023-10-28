@@ -46,10 +46,7 @@ http.post('/createAcc', async (req, res) => {
                 });
             }
             //Connection problems
-            console.log(
-                "Exception casued by " + data.username + "\n" +
-                error.toString()
-            );
+            console.log("\x1b[31mException\x1b[0m casued by " + data.username + "\n" + error.toString());
             return res.status(400).json({
                 error: true,
                 message: 'Server Crashed'
@@ -69,7 +66,7 @@ http.post('/login', async (req, res) => {
     try {
         //Pickup from database  profile info
         const user = await accountsDatabase.findOne({
-            attributes: ['id', 'username', 'password', 'language', 'characters', 'token'],
+            attributes: ['id', 'username', 'password', 'characters', 'token'],
             where: {
                 username: req.body.username,
             }
@@ -106,13 +103,12 @@ http.post('/login', async (req, res) => {
             message: 'Success',
             id: user.id,
             username: user.username,
-            language: user.language,
             characters: user.characters,
             token: user.token
         });
     } catch (error) {
         console.log(
-            "Exception casued by " + req.body.username + "\n" +
+            "\x1b[31mException\x1b[0m casued by " + req.body.username + "\n" +
             error.toString()
         );
         return res.status(400).json({
@@ -127,7 +123,7 @@ http.post('/loginRemember', async (req, res) => {
     try {
         //Pickup from database  profile info
         const user = await accountsDatabase.findOne({
-            attributes: ['id', 'username', 'password', 'language', 'characters', 'token'],
+            attributes: ['id', 'username', 'password', 'characters', 'token'],
             where: {
                 id: req.body.id,
             }
@@ -154,13 +150,12 @@ http.post('/loginRemember', async (req, res) => {
             message: 'Success',
             id: user.id,
             username: user.username,
-            language: user.language,
             characters: user.characters,
             token: user.token
         });
     } catch (error) {
         console.log(
-            "Exception casued by ID " + req.body.id + "\n" +
+            "\x1b[31mException\x1b[0m casued by ID " + req.body.id + "\n" +
             error.toString()
         );
         return res.status(400).json({

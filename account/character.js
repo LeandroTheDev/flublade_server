@@ -3,20 +3,23 @@ const jwt = require('jsonwebtoken');
 
 //Http Connection
 const { http } = require('../start-server');
+const { classesAttributes, raceAttributes } = require('../gameplay/config');
+const { accountsDatabase } = require('../start-server');
+const { status } = require('../gameplay/status');
 
 //Returns the account characters
-http.post('/getCharacters', async (req, res) => {
+http.get('/getCharacters', async (req, res) => {
     try {
         //Pickup from database  profile info
-        const user = await accounts.findOne({
+        const user = await accountsDatabase.findOne({
             attributes: ['id', 'characters', 'token'],
             where: {
-                id: req.body.id,
+                id: req.query.id,
             }
         });
 
         //Token check
-        if (req.body.token != user.token) {
+        if (req.query.token != user.token) {
             user.token = jwt.sign({ id: user.id }, 'GenericTokenPassword(1wWeRtyK243Mmnkjxz23zs)', {});
             await user.save();
             return res.status(400).json({
@@ -25,25 +28,17 @@ http.post('/getCharacters', async (req, res) => {
             });
         }
 
-        //Return only inventory
-        if (req.body.onlyInventory) {
-            var json = JSON.parse(user.characters);
-            //Success
-            return res.json({
-                error: false,
-                message: 'Success',
-                inventory: json['character' + req.body.selectedCharacter]['inventory']
-            });
-        }
-
         //Success
         return res.json({
             error: false,
-            message: 'Success',
+            message: 'success',
             characters: user.characters
         });
-        //Error Treatment
     } catch (error) {
+        console.log(
+            "\x1b[31mException\x1b[0m casued by ID " + req.query.id + "\n" +
+            error.toString()
+        );
         return res.status(400).json({
             error: true,
             message: 'Server Crashed'
@@ -55,7 +50,7 @@ http.post('/getCharacters', async (req, res) => {
 http.post('/removeCharacters', async (req, res) => {
     try {
         //Pickup from database  profile info
-        const user = await accounts.findOne({
+        const user = await accountsDatabase.findOne({
             attributes: ['id', 'username', 'characters', 'token'],
             where: {
                 id: req.body.id,
@@ -104,10 +99,9 @@ http.post('/removeCharacters', async (req, res) => {
             message: 'Success',
             characters: user.characters
         });
-        //Error Treatment
     } catch (error) {
         console.log(
-            "Exception casued by ID" + req.body.id + "\n" +
+            "\x1b[31mException\x1b[0m casued by ID" + req.body.id + "\n" +
             error.toString()
         );
         return res.status(400).json({
@@ -120,7 +114,8 @@ http.post('/removeCharacters', async (req, res) => {
 //Create account character
 http.post('/createCharacters', async (req, res) => {
     try {
-        var selectedClass = baseAtributes[req.body.class];
+        var selectedClass = classesAttributes[req.body.class];
+        var selectedRace = raceAttributes[req.body.body.race];
         //Rules check
         if (true) {
             //Empty
@@ -146,7 +141,7 @@ http.post('/createCharacters', async (req, res) => {
         }
 
         //Pickup from database  profile info
-        const user = await accounts.findOne({
+        const user = await accountsDatabase.findOne({
             attributes: ['id', 'username', 'characters', 'token'],
             where: {
                 id: req.body.id,
@@ -162,14 +157,17 @@ http.post('/createCharacters', async (req, res) => {
                 message: 'Invalid Login'
             });
         }
+
         //Adding character
+        let characters = JSON.parse(user.characters);
         if (true) {
-            const playerClass = req.body.class;
             const playerBody = req.body.body;
-            let characters = JSON.parse(user.characters);
+            const playerClass = req.body.class;
+            const playerRace = playerBody.race
             characters['character' + Object.keys(characters).length] = {
                 'name': req.body.name,
                 'class': playerClass,
+                'race': playerRace,
                 'level': 1,
                 'experience': 0,
                 'skillpoint': 0,
@@ -212,81 +210,98 @@ http.post('/createCharacters', async (req, res) => {
                 },
                 'classStatus': {
                     //Stats
-                    'life': classes.SystemFunctions.playerMaxLife(req.body.class, baseAtributes[req.body.class]['strength']),
-                    'lifeRegen': baseAtributes[req.body.class].lifeRegen,
-                    'mana': baseAtributes[req.body.class].mana,
-                    'manaRegen': baseAtributes[req.body.class].manaRegen,
-                    'strength': baseAtributes[req.body.class].strength,
-                    'agility': baseAtributes[req.body.class].agility,
-                    'intelligence': baseAtributes[req.body.class].intelligence,
+                    'life': selectedClass.life,
+                    'lifeRegen': selectedClass.lifeRegen,
+                    'mana': selectedClass.mana,
+                    'manaRegen': selectedClass.manaRegen,
+                    'strength': selectedClass.strength,
+                    'agility': selectedClass.agility,
+                    'intelligence': selectedClass.intelligence,
                     //Damage
-                    'physical': baseAtributes[req.body.class].physical,
-                    'ranged': baseAtributes[req.body.class].ranged,
-                    'physicalAmplification': baseAtributes[req.body.class].physicalAmplification,
-                    'rangedAmplification': baseAtributes[req.body.class].rangedAmplification,
-                    'magicalAmplification': baseAtributes[req.body.class].magicalAmplification,
-                    'fireAmplification': baseAtributes[req.body.class].fireAmplification,
-                    'waterAmplification': baseAtributes[req.body.class].waterAmplification,
-                    'natureAmplification': baseAtributes[req.body.class].natureAmplification,
-                    'lightAmplification': baseAtributes[req.body.class].lightAmplification,
-                    'darkAmplification': baseAtributes[req.body.class].darkAmplification,
+                    'physical': selectedClass.physical,
+                    'ranged': selectedClass.ranged,
+                    'physicalAmplification': selectedClass.physicalAmplification,
+                    'rangedAmplification': selectedClass.rangedAmplification,
+                    'magicalAmplification': selectedClass.magicalAmplification,
+                    'fireAmplification': selectedClass.fireAmplification,
+                    'waterAmplification': selectedClass.waterAmplification,
+                    'natureAmplification': selectedClass.natureAmplification,
+                    'lightAmplification': selectedClass.lightAmplification,
+                    'darkAmplification': selectedClass.darkAmplification,
                     //Defence
-                    'physicalResistence': baseAtributes[req.body.class].physicalResistence,
-                    'magicalResistence': baseAtributes[req.body.class].magicalResistence,
-                    'fireResistence': baseAtributes[req.body.class].fireResistence,
-                    'waterResistence': baseAtributes[req.body.class].waterResistence,
-                    'natureResistence': baseAtributes[req.body.class].natureResistence,
-                    'lightResistence': baseAtributes[req.body.class].lightResistence,
-                    'darkResistence': baseAtributes[req.body.class].darkResistence,
-                    'physicalResistenceAmplification': baseAtributes[req.body.class].physicalResistenceAmplification,
-                    'magicalResistenceAmplification': baseAtributes[req.body.class].magicalResistenceAmplification,
-                    'fireResistenceAmplification': baseAtributes[req.body.class].fireResistenceAmplification,
-                    'waterResistenceAmplification': baseAtributes[req.body.class].waterResistenceAmplification,
-                    'natureResistenceAmplification': baseAtributes[req.body.class].natureResistenceAmplification,
-                    'lightResistenceAmplification': baseAtributes[req.body.class].lightResistenceAmplification,
-                    'darkResistenceAmplification': baseAtributes[req.body.class].darkResistenceAmplification,
+                    'physicalResistence': selectedClass.physicalResistence,
+                    'magicalResistence': selectedClass.magicalResistence,
+                    'fireResistence': selectedClass.fireResistence,
+                    'waterResistence': selectedClass.waterResistence,
+                    'natureResistence': selectedClass.natureResistence,
+                    'lightResistence': selectedClass.lightResistence,
+                    'darkResistence': selectedClass.darkResistence,
+                    'physicalResistenceAmplification': selectedClass.physicalResistenceAmplification,
+                    'magicalResistenceAmplification': selectedClass.magicalResistenceAmplification,
+                    'fireResistenceAmplification': selectedClass.fireResistenceAmplification,
+                    'waterResistenceAmplification': selectedClass.waterResistenceAmplification,
+                    'natureResistenceAmplification': selectedClass.natureResistenceAmplification,
+                    'lightResistenceAmplification': selectedClass.lightResistenceAmplification,
+                    'darkResistenceAmplification': selectedClass.darkResistenceAmplification,
+                },
+                'raceStatus': {
+                    //Stats
+                    'life': selectedRace.life,
+                    'lifeRegen': selectedRace.lifeRegen,
+                    'mana': selectedRace.mana,
+                    'manaRegen': selectedRace.manaRegen,
+                    'strength': selectedRace.strength,
+                    'agility': selectedRace.agility,
+                    'intelligence': selectedRace.intelligence,
+                    //Damage
+                    'physical': selectedRace.physical,
+                    'ranged': selectedRace.ranged,
+                    'physicalAmplification': selectedRace.physicalAmplification,
+                    'rangedAmplification': selectedRace.rangedAmplification,
+                    'magicalAmplification': selectedRace.magicalAmplification,
+                    'fireAmplification': selectedRace.fireAmplification,
+                    'waterAmplification': selectedRace.waterAmplification,
+                    'natureAmplification': selectedRace.natureAmplification,
+                    'lightAmplification': selectedRace.lightAmplification,
+                    'darkAmplification': selectedRace.darkAmplification,
+                    //Defence
+                    'physicalResistence': selectedRace.physicalResistence,
+                    'magicalResistence': selectedRace.magicalResistence,
+                    'fireResistence': selectedRace.fireResistence,
+                    'waterResistence': selectedRace.waterResistence,
+                    'natureResistence': selectedRace.natureResistence,
+                    'lightResistence': selectedRace.lightResistence,
+                    'darkResistence': selectedRace.darkResistence,
+                    'physicalResistenceAmplification': selectedRace.physicalResistenceAmplification,
+                    'magicalResistenceAmplification': selectedRace.magicalResistenceAmplification,
+                    'fireResistenceAmplification': selectedRace.fireResistenceAmplification,
+                    'waterResistenceAmplification': selectedRace.waterResistenceAmplification,
+                    'natureResistenceAmplification': selectedRace.natureResistenceAmplification,
+                    'lightResistenceAmplification': selectedRace.lightResistenceAmplification,
+                    'darkResistenceAmplification': selectedRace.darkResistenceAmplification,
                 },
                 'characterStatus': {
-                    //Stats
-                    'life': classes.SystemFunctions.playerMaxLife(req.body.class, baseAtributes[req.body.class]['strength']),
-                    'lifeRegen': baseAtributes[req.body.class].lifeRegen,
-                    'mana': baseAtributes[req.body.class].mana,
-                    'manaRegen': baseAtributes[req.body.class].manaRegen,
-                    'strength': baseAtributes[req.body.class].strength,
-                    'agility': baseAtributes[req.body.class].agility,
-                    'intelligence': baseAtributes[req.body.class].intelligence,
-                    //Damage
-                    'physical': baseAtributes[req.body.class].physical,
-                    'ranged': baseAtributes[req.body.class].ranged,
-                    'physicalAmplification': baseAtributes[req.body.class].physicalAmplification,
-                    'rangedAmplification': baseAtributes[req.body.class].rangedAmplification,
-                    'magicalAmplification': baseAtributes[req.body.class].magicalAmplification,
-                    'fireAmplification': baseAtributes[req.body.class].fireAmplification,
-                    'waterAmplification': baseAtributes[req.body.class].waterAmplification,
-                    'natureAmplification': baseAtributes[req.body.class].natureAmplification,
-                    'lightAmplification': baseAtributes[req.body.class].lightAmplification,
-                    'darkAmplification': baseAtributes[req.body.class].darkAmplification,
-                    //Defence
-                    'physicalResistence': baseAtributes[req.body.class].physicalResistence,
-                    'magicalResistence': baseAtributes[req.body.class].magicalResistence,
-                    'fireResistence': baseAtributes[req.body.class].fireResistence,
-                    'waterResistence': baseAtributes[req.body.class].waterResistence,
-                    'natureResistence': baseAtributes[req.body.class].natureResistence,
-                    'lightResistence': baseAtributes[req.body.class].lightResistence,
-                    'darkResistence': baseAtributes[req.body.class].darkResistence,
-                    'physicalResistenceAmplification': baseAtributes[req.body.class].physicalResistenceAmplification,
-                    'magicalResistenceAmplification': baseAtributes[req.body.class].magicalResistenceAmplification,
-                    'fireResistenceAmplification': baseAtributes[req.body.class].fireResistenceAmplification,
-                    'waterResistenceAmplification': baseAtributes[req.body.class].waterResistenceAmplification,
-                    'natureResistenceAmplification': baseAtributes[req.body.class].natureResistenceAmplification,
-                    'lightResistenceAmplification': baseAtributes[req.body.class].lightResistenceAmplification,
-                    'darkResistenceAmplification': baseAtributes[req.body.class].darkResistenceAmplification,
+                    //Character Max Life
+                    'life': status.getCharacterMaxLife(
+                        //Max Strength in Level 1
+                        (0 + selectedClass.strength + selectedRace.strength),
+                        //Max Life in Level 1
+                        (0 + selectedClass.life + selectedRace.life)
+                    ),
+                    //Character Max Mana
+                    'mana': status.getCharacterMaxMana(
+                        //Max Intelligence in Level 1
+                        (0 + selectedClass.intelligence + selectedRace.intelligence),
+                        //Max Mana in Level 1
+                        (0 + selectedClass.mana + selectedRace.mana)
+                    ),
+                    //Character Base Skills from Class and Race
+                    'skills': Object.assign({}, selectedClass.skills, selectedRace.skills),
+                    'buffs': Object.assign({}, selectedClass.buffs, selectedRace.buffs),
+                    'debuffs': Object.assign({}, selectedClass.debuffs, selectedRace.debuffs),
                 },
                 'inventory': {},
                 'equips': {},
-                'race': playerBody.race,
-                'stats': baseAtributes[req.body.class].buffs,
-                'skills': baseAtributes[req.body.class].skills,
                 'body': {
                     'hair': playerBody.hair,
                     'hairColor': playerBody.hairColor,
@@ -300,7 +315,7 @@ http.post('/createCharacters', async (req, res) => {
                 },
                 'location': 'prologue_spawn',
             };
-            console.log('Character Created: ' + req.body.name + ', Class: ' + req.body.class + ', Username: ' + user.username);
+            console.log('Character Created, Name: ' + req.body.name + ', Class: ' + req.body.class + ' Race: ' + playerRace + ', Username: ' + user.username);
         }
 
         //Save on database
@@ -310,18 +325,17 @@ http.post('/createCharacters', async (req, res) => {
         //Success
         return res.json({
             error: false,
-            message: 'Success',
+            message: 'success',
             characters: user.characters
         });
-        //Error Treatment
     } catch (error) {
         console.log(
-            "Exception casued by ID" + req.body.id + "\n" +
+            "\x1b[31mException\x1b[0m casued by ID " + req.body.id + "\n" +
             error.toString()
         );
         return res.status(400).json({
             error: true,
-            message: 'Invalid Login'
+            message: 'Server Crashed'
         });
     }
 });

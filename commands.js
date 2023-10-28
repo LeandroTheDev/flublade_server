@@ -16,7 +16,8 @@ const accountList = '\x1b[35mAccount Command List\x1b[0m\n' +
   "- create (name password) #create a new account\n" +
   "- list #show a list of all accounts\n" +
   "- remove (name) #remove account, this is irreversible\n" +
-  "- update (name password) #change account password";
+  "- update (name password) #change account password"; +
+    "- characters (name) #show all characters of specific account"
 
 function terminalCommand() {
   rl.question('', (command) => {
@@ -45,6 +46,13 @@ function terminalCommand() {
       if (command == "account update" || command == "account update ") {
         console.log("\x1b[33mIncorrect parameters\x1b[0m");
         console.log("\x1b[33mExample: account update test 123\x1b[0m")
+        terminalCommand();
+        return;
+      }
+      //Incorrect Characters Parameters
+      if (command == "account characters" || command == "account characters ") {
+        console.log("\x1b[33mIncorrect parameters\x1b[0m");
+        console.log("\x1b[33mExample: account characters test\x1b[0m")
         terminalCommand();
         return;
       }
@@ -94,7 +102,7 @@ function terminalCommand() {
           if (users.length == 0) {
             console.log("0 Accounts Created");
           }
-          
+
           for (let i = 0; i < users.length; i++) {
             console.log(users[i].dataValues.username);
           }
@@ -121,6 +129,37 @@ function terminalCommand() {
         });
         terminalCommand();
         return;
+      }
+      //Characters
+      if (command.substring(0, 18) === "account characters") {
+        command = command.substring(19);
+        //Find all characters of username
+        accountsDatabase.findAll({
+          attributes: ['characters'],
+          where: {
+            username: command
+          }
+        }).then(characters => {
+          //No account Found
+          if (characters.length == 0) {
+            console.log("No Account found with name " + command);
+            return;
+          }
+          let userCharacters = JSON.parse(characters[0].dataValues.characters);
+          let charactersNames = "";
+          //Add Characters to the List
+          for(let i = 0; i < Object.keys(userCharacters).length; i++) {
+            let character = userCharacters['character' + i];
+            charactersNames += "Name: " + character.name + ", Level: " + character.level;
+            if(i != Object.keys(userCharacters).length - 1) {
+              charactersNames += "\n";
+            }
+          }
+          if(charactersNames == "") console.log("0 Characters Created in this Account");
+          else console.log(charactersNames);
+        });
+        terminalCommand();
+        return
       }
 
       console.log("\x1b[33mIncorrect parameters\x1b[0m");
