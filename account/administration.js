@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 //Http Connection
-const { http } = require('../start-server');
+const { http, accountsDatabase } = require('../start-server');
 
 //Create account
 http.post('/createAcc', async (req, res) => {
@@ -29,7 +29,7 @@ http.post('/createAcc', async (req, res) => {
         //Encrypte password
         data.password = await bcrypt.hash(data.password, 8);
         //Add in database
-        await accounts.create(data).then(() => {
+        await accountsDatabase.create(data).then(() => {
             //Account creation log
             console.log('Account created: ' + data.username);
             //Return to frontend
@@ -56,7 +56,7 @@ http.post('/createAcc', async (req, res) => {
             });
         });
     } catch (error) {
-        console.log("Exception casued by " + req.ip + "\n" + error.toString());
+        console.log("\x1b[31mException\x1b[0m casued by " + req.ip + "\n" + error.toString());
         return res.status(400).json({
             error: true,
             message: 'Server Crashed'
@@ -68,7 +68,7 @@ http.post('/createAcc', async (req, res) => {
 http.post('/login', async (req, res) => {
     try {
         //Pickup from database  profile info
-        const user = await accounts.findOne({
+        const user = await accountsDatabase.findOne({
             attributes: ['id', 'username', 'password', 'language', 'characters', 'token'],
             where: {
                 username: req.body.username,
@@ -126,7 +126,7 @@ http.post('/login', async (req, res) => {
 http.post('/loginRemember', async (req, res) => {
     try {
         //Pickup from database  profile info
-        const user = await accounts.findOne({
+        const user = await accountsDatabase.findOne({
             attributes: ['id', 'username', 'password', 'language', 'characters', 'token'],
             where: {
                 id: req.body.id,
