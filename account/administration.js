@@ -15,14 +15,14 @@ http.post('/createAcc', async (req, res) => {
             if (data.username.length < 3 || data.username.length > 20) {
                 return res.status(400).json({
                     error: true,
-                    message: 'Too small or too big username'
+                    message: 'Too Small or Too Big Username'
                 });
             }
             //Too small password
             if (data.password.length < 3 || data.password.length > 100) {
                 return res.status(400).json({
                     error: true,
-                    message: 'Too small password or too big password'
+                    message: 'Too Small Password or Too Big Password'
                 });
             }
         }
@@ -42,7 +42,7 @@ http.post('/createAcc', async (req, res) => {
             if (error['errors'][0]['message'].includes('username must be unique')) {
                 return res.status(400).json({
                     error: true,
-                    message: 'Username already exists'
+                    message: 'Username Already Exists'
                 });
             }
             //Connection problems

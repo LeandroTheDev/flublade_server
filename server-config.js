@@ -12,7 +12,7 @@ http.get('/getServerData', (_, res) => {
     const serverData = {
         serverName: serverName,
         gameVersion: gameVersion,
-        message: "success"
+        message: "Success"
     };
     res.json(serverData);
 });

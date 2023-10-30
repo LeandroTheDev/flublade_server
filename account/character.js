@@ -31,7 +31,7 @@ http.get('/getCharacters', async (req, res) => {
         //Success
         return res.json({
             error: false,
-            message: 'success',
+            message: 'Success',
             characters: user.characters
         });
     } catch (error) {
@@ -128,7 +128,7 @@ http.post('/createCharacters', async (req, res) => {
             if (req.body.name.length > 10) {
                 return res.status(400).json({
                     error: true,
-                    message: 'Too big'
+                    message: 'Too Big'
                 });
             }
             //Verification if class exist
@@ -325,7 +325,7 @@ http.post('/createCharacters', async (req, res) => {
         //Success
         return res.json({
             error: false,
-            message: 'success',
+            message: 'Success',
             characters: user.characters
         });
     } catch (error) {

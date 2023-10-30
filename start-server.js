@@ -28,7 +28,7 @@ function startResponses() {
         connection.use((req, res, next) => {
             //Ip blocked
             if (ipTimeout[req.ip] == 99) {
-                res.status(413).send({ error: true, message: 'Too many attempts' });
+                res.status(413).send({ error: true, message: 'Too Many Attempts' });
                 return;
             }
 
