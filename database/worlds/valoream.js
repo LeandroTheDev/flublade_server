@@ -1,33 +1,23 @@
 //Dependencies
 const Sequelize = require('sequelize');
-const { database } = require('../start-server');
+const { worldDatabase } = require('../../start-server');
 
 //Database tables
-const accounts = database.define('accounts', {
+const world = worldDatabase.define('valoream', {
     id: {
         type: Sequelize.INTEGER,
         autoIncrement: true,
         allowNull: false,
         primaryKey: true
     },
-    username: {
-        type: "varchar(50)",
-        allowNull: false,
-        unique: true
-    },
-    password: {
+    identification: {
         type: "varchar(500)",
-        allowNull: false,
+        defaultValue: "I am Visual Only"
     },
-    characters: {
+    attribute: {
         type: "longtext",
         allowNull: false,
         defaultValue: "{}"
-    },
-    token: {
-        type: "longtext",
-        allowNull: false,
-        defaultValue: "null"
     }
 }, {
     //Disable defaults from sequelize
@@ -37,9 +27,7 @@ const accounts = database.define('accounts', {
 });
 
 //Create table if not exists
-accounts.sync();
-
-console.log("Successfully connected to the Accounts Database")
+worldDatabase.sync();
 
 //Exports globally
-module.exports = accounts;
+module.exports = world;
