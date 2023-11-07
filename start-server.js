@@ -1,6 +1,7 @@
 console.log('\x1b[32mStarting Server\x1b[0m');
 const http = require("./http");
 const { serverDatabase, worldDatabase } = require("./database/config");
+//Used for DDOS Protection
 var ipTimeout = {};
 
 initializeServer();
@@ -73,20 +74,33 @@ function startResponses() {
         const serverconfig = require("./server-config");
         const administration = require("./account/administration");
         const character = require("./account/character");
-        const commands = require("./commands");
+        startSockets();
     });
 }
 
+//Starts the sockets to receive and give players real time informations
+function startSockets() {
+    const { navigatorSocket } = require("./gameplay/navigation");
+    const commands = require("./commands");
+}
+
+//Read all world data and save in database
 function readAndWriteWorld(worlds, navigatorTiles) {
-    console.log("Saving World Data in Database");
     async function attributeReader(data) {
         async function setTiles(attributes) {
+            //Error Treatment
+            if (attributes["tiles"] == null) { console.log("\x1b[31mFatal error, null in required attribute: tiles \x1b[0m"); process.exit(); }
+            if (attributes["chunkCoordinate"] == null) { console.log("\x1b[31mFatal error, null in required attribute: chunkCoordinate\x1b[0m"); process.exit(); }
+
+            //Try to find a chunk in database
             let chunk = await navigatorTiles.findOne({
                 attributes: ['tiles', 'attributes'],
                 where: {
-                    coordinate: "0,0",
+                    coordinate: attributes["chunkCoordinate"],
                 }
             });
+
+            //If doesnt exist a chunk, then simple add it to the database
             if (chunk == null) {
                 let createData = {
                     coordinate: attributes["chunkCoordinate"],
@@ -96,13 +110,37 @@ function readAndWriteWorld(worlds, navigatorTiles) {
                     })
                 }
                 await navigatorTiles.create(createData);
+            }
+            //If exist a chunk we need to update the attributes, and tiles
+            else {
+                function overwriteTiles() {
+                    let chunkSize = 15;
+                    let chunkTiles = JSON.parse(chunk["tiles"]);
+                    let attributeTiles = attributes["tiles"];
+                    for (let i = 0; i < chunkSize; i++) {
+                        for (let j = 0; j < chunkSize; j++) {
+                            //Check if tile is different from 0
+                            if (attributeTiles[i][j] != 0) {
+                                //Overwrite chunk tile to new tile
+                                chunkTiles[i][j] = attributeTiles[i][j];
+                            }
+                        }
+                    }
+                    return chunkTiles;
+                }
+                let updateData = {
+                    tiles: JSON.stringify(overwriteTiles()),
+                    attributes: JSON.stringify({
+                        title: attributes["title"] ?? JSON.parse(chunk["attributes"])["title"], //Add the Chunk title if is null
+                    })
+                }
+                await navigatorTiles.update(updateData, { where: { coordinate: attributes["chunkCoordinate"] } });
             };
-            // console.log(chunk["dataValues"]);
         }
-        function setEntity(attributes) {
+        async function setEntity(attributes) {
             console.log("SET ENTITY IS NOT IMPLEMENTED");
         }
-        function setInteraction(attributes) {
+        async function setInteraction(attributes) {
             console.log("SET INTERACTION IS NOT IMPLEMENTED");
         }
         //Swipe Attributes
@@ -112,19 +150,28 @@ function readAndWriteWorld(worlds, navigatorTiles) {
             //Set Tiles
             if (attribute.substring(0, 8) == 'setTiles') await setTiles(value);
             //Set Entity
-            if (attribute.substring(0, 9) == 'setEntity') setEntity(value);
+            if (attribute.substring(0, 9) == 'setEntity') await setEntity(value);
             //Set Interaction
-            if (attribute.substring(0, 14) == 'setInteraction') setInteraction(value);
+            if (attribute.substring(0, 14) == 'setInteraction') await setInteraction(value);
         }
     }
     return new Promise(async (resolve, reject) => {
+        console.log("Removing Old World Data...");
+        await navigatorTiles.destroy({ where: {} });
+        console.log("Saving World Data in Database");
         //Swipe Worlds
         for (let i = 0; i < worlds.length; i++) {
             //Load the World Datas
             let worldData = await worlds[i].findAll({ attributes: ['attribute'] })
             //Swipe the Datas
             for (let j = 0; j < worldData.length; j++) {
-                let data = JSON.parse(worldData[j]["dataValues"]["attribute"]);
+                let data = {}
+                try {
+                    data = JSON.parse(worldData[j]["dataValues"]["attribute"]);
+                } catch (error) {
+                    console.log("\x1b[31mFatal error while parsing Database: \x1b[0m" + error)
+                    process.exit();
+                }
                 await attributeReader(data);
             }
         }
