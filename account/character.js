@@ -4,14 +4,14 @@ const jwt = require('jsonwebtoken');
 //Http Connection
 const { http } = require('../start-server');
 const { classesAttributes, raceAttributes } = require('../gameplay/config');
-const { accountsDatabase } = require('../start-server');
+const { accountsTable } = require('../start-server');
 const { status } = require('../gameplay/status');
 
 //Returns the account characters
 http.get('/getCharacters', async (req, res) => {
     try {
         //Pickup from database  profile info
-        const user = await accountsDatabase.findOne({
+        const user = await accountsTable.findOne({
             attributes: ['id', 'characters', 'token'],
             where: {
                 id: req.query.id,
@@ -50,7 +50,7 @@ http.get('/getCharacters', async (req, res) => {
 http.post('/removeCharacters', async (req, res) => {
     try {
         //Pickup from database  profile info
-        const user = await accountsDatabase.findOne({
+        const user = await accountsTable.findOne({
             attributes: ['id', 'username', 'characters', 'token'],
             where: {
                 id: req.body.id,
@@ -141,7 +141,7 @@ http.post('/createCharacters', async (req, res) => {
         }
 
         //Pickup from database  profile info
-        const user = await accountsDatabase.findOne({
+        const user = await accountsTable.findOne({
             attributes: ['id', 'username', 'characters', 'token'],
             where: {
                 id: req.body.id,

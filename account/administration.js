@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 //Http Connection
-const { http, accountsDatabase } = require('../start-server');
+const { http, accountsTable } = require('../start-server');
 
 //Create account
 http.post('/createAcc', async (req, res) => {
@@ -29,7 +29,7 @@ http.post('/createAcc', async (req, res) => {
         //Encrypte password
         data.password = await bcrypt.hash(data.password, 8);
         //Add in database
-        await accountsDatabase.create(data).then(() => {
+        await accountsTable.create(data).then(() => {
             //Account creation log
             console.log('Account created: ' + data.username);
             //Return to frontend
@@ -65,7 +65,7 @@ http.post('/createAcc', async (req, res) => {
 http.post('/login', async (req, res) => {
     try {
         //Pickup from database  profile info
-        const user = await accountsDatabase.findOne({
+        const user = await accountsTable.findOne({
             attributes: ['id', 'username', 'password', 'characters', 'token'],
             where: {
                 username: req.body.username,
@@ -97,7 +97,7 @@ http.post('/login', async (req, res) => {
         await user.save();
 
         //Success Login
-        console.log('User Logged: ' + user.id);
+        console.log('User Logged: ' + user.username);
         return res.json({
             error: false,
             message: 'Success',
@@ -122,7 +122,7 @@ http.post('/login', async (req, res) => {
 http.post('/loginRemember', async (req, res) => {
     try {
         //Pickup from database  profile info
-        const user = await accountsDatabase.findOne({
+        const user = await accountsTable.findOne({
             attributes: ['id', 'username', 'password', 'characters', 'token'],
             where: {
                 id: req.body.id,
@@ -144,7 +144,7 @@ http.post('/loginRemember', async (req, res) => {
         await user.save();
 
         //Success Login
-        console.log('Player Logged: ' + user.username);
+        console.log('User Logged: ' + user.username);
         return res.json({
             error: false,
             message: 'Success',
