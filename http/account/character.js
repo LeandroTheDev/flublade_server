@@ -2,10 +2,9 @@
 const jwt = require('jsonwebtoken');
 
 //Http Connection
-const { http } = require('../start-server');
-const { classesAttributes, raceAttributes } = require('../gameplay/config');
-const { accountsTable } = require('../start-server');
-const { status } = require('../gameplay/status');
+const { classesAttributes, raceAttributes } = require('../../gameplay/config');
+const { http, accountsTable } = require('../../start-server');
+const { status } = require('../../gameplay/status');
 
 //Returns the account characters
 http.get('/getCharacters', async (req, res) => {

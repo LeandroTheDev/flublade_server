@@ -1,5 +1,5 @@
 console.log('\x1b[32mStarting Server\x1b[0m');
-const http = require("./http");
+const http = require("./http/config");
 const { serverDatabase, worldDatabase } = require("./database/config");
 //Used for DDOS Protection
 var ipTimeout = {};
@@ -8,34 +8,38 @@ initializeServer();
 
 //Initialize Server
 function initializeServer() {
-    console.log("Connecting to World Database");
-    //Initialize World Database
-    worldDatabase.authenticate().then(() => {
-        module.exports.worldDatabase = worldDatabase;
-        console.log('\x1b[32mSuccessfully Connected to World Database\x1b[0m');
+    const server_config = require("./load-config");
+    server_config().then(function () {
+        module.exports.serverConfig = server_config;
+        console.log("Connecting to World Database");
+        //Initialize World Database
+        worldDatabase.authenticate().then(() => {
+            module.exports.worldDatabase = worldDatabase;
+            console.log('\x1b[32mSuccessfully Connected to World Database\x1b[0m');
 
-        const { worlds, navigatorTiles } = require("./database/worlds/worlds");
-        readAndWriteWorld(worlds, navigatorTiles).then((result) => {
-            console.log("Connecting to Server Database");
-            //Initialize Server Database
-            serverDatabase.authenticate().then(() => {
-                module.exports.serverDatabase = serverDatabase;
-                console.log('\x1b[32mSuccessfully Connected to Server Database\x1b[0m');
+            const { worlds, navigatorTiles } = require("./database/worlds/worlds");
+            readAndWriteWorld(worlds, navigatorTiles).then((result) => {
+                console.log("Connecting to Server Database");
+                //Initialize Server Database
+                serverDatabase.authenticate().then(() => {
+                    module.exports.serverDatabase = serverDatabase;
+                    console.log('\x1b[32mSuccessfully Connected to Server Database\x1b[0m');
 
-                //Load Accounts
-                console.log("Connecting Accounts Table")
-                const accountsTable = require("./database/accountsTable");
-                module.exports.accountsTable = accountsTable;
-                //Initialize Responses
-                startResponses();
-            }).catch((error) => {
-                console.log('Fatal error connecting to the database \nERROR: ' + error);
-                process.exit();
+                    //Load Accounts
+                    console.log("Connecting Accounts Table")
+                    const accountsTable = require("./database/accountsTable");
+                    module.exports.accountsTable = accountsTable;
+                    //Initialize Responses
+                    startResponses();
+                }).catch((error) => {
+                    console.log("\x1b[31mFatal error connecting to the database \nERROR: \x1b[0m" + error)
+                    process.exit();
+                });
             });
+        }).catch((error) => {
+            console.log("\x1b[31mFatal error connecting to the database \nERROR: \x1b[0m" + error)
+            process.exit();
         });
-    }).catch((error) => {
-        console.log('Fatal error connecting to the database \nERROR: ' + error);
-        process.exit();
     });
 }
 
@@ -71,9 +75,9 @@ function startResponses() {
             console.log(`\x1b[31mWe are been attacked\x1b[0m`);
         });
         module.exports.http = connection;
-        const serverconfig = require("./server-config");
-        const administration = require("./account/administration");
-        const character = require("./account/character");
+        const serverconfig = require("./load-config");
+        const administration = require("./http/account/administration");
+        const character = require("./http/account/character");
         startSockets();
     });
 }

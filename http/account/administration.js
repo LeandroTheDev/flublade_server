@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 //Http Connection
-const { http, accountsTable } = require('../start-server');
+const { http, accountsTable } = require('../../start-server');
 
 //Create account
 http.post('/createAcc', async (req, res) => {

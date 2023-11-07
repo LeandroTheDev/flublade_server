@@ -1,0 +1,3 @@
+#Server Configuration
+serverName=My Custom Server
+gameVersion=1.0.0

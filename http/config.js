@@ -11,6 +11,16 @@ function init(resolve) {
         console.log('Server Responses started in ports 8080');
         resolve(http);
     });
+
+    //Retrieve server informations
+    http.get('/getServerData', (_, res) => {
+        const serverData = {
+            serverName: serverName,
+            gameVersion: gameVersion,
+            message: "Success"
+        };
+        res.json(serverData);
+    });
 }
 
 module.exports = function () {
