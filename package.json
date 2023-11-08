@@ -1,14 +1,16 @@
 {
-  "name": "nodejs_project",
+  "name": "flublade_server",
   "version": "1.0.0",
-  "description": "Creating a backend server with nodejs",
-  "main": "index.js",
+  "description": "Server for Flublade",
+  "main": "start-server.js",
+  "output": "package.blob",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "webpack --mode production",
+    "start": "node start-server.js"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "BoboDev",
+  "license": "LeandroTheDev",
   "dependencies": {
     "axios": "^1.6.0",
     "bcryptjs": "^2.4.3",
@@ -18,9 +20,11 @@
     "mariadb": "^3.2.2",
     "mysql2": "^3.2.0",
     "sequelize": "^6.33.0",
+    "webpack": "^5.89.0",
     "ws": "^8.14.2"
   },
   "devDependencies": {
-    "nodemon": "^2.0.22"
+    "nodemon": "^2.0.22",
+    "webpack-cli": "^5.1.4"
   }
 }

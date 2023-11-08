@@ -20,8 +20,10 @@ worlds.push(cristalidia);
 
 //Load the navigator that also contains all worlds data
 const navigatorTiles = require('./navigator_tiles');
+const navigatorEntitys = require('./navigator_entitys');
 
 //Export all Worlds
 console.log('\x1b[32mSuccessfully Loaded World Tables\x1b[0m');
 module.exports.worlds = worlds;
 module.exports.navigatorTiles = navigatorTiles;
+module.exports.navigatorEntitys = navigatorEntitys;
