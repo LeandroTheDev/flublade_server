@@ -3,7 +3,7 @@ const Sequelize = require('sequelize');
 
 const adminName = "flublade";
 const adminPassword = "i@Dhs4e5E%fGz&ngbY2m&AGRCVlskBUrrCnsYFUze&fhxehb#j";
-const databaseIP = "189.27.183.128";
+const databaseIP = "192.168.15.151";
 
 //Database informations
 const server = new Sequelize('flublade_server', adminName, adminPassword, {

@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const { classesAttributes, raceAttributes } = require('../../gameplay/config');
 const { http, accountsTable } = require('../../start-server');
 const { status } = require('../../gameplay/status');
+const { gameplayConfigFunctions } = require('../../gameplay/config');
 
 //Returns the account characters
 http.get('/getCharacters', async (req, res) => {
@@ -312,7 +313,7 @@ http.post('/createCharacters', async (req, res) => {
                     'skinColor': playerBody.skinColor,
                     'gender': playerBody.gender,
                 },
-                'location': 'prologue_spawn',
+                'location': gameplayConfigFunctions.returnCharacterCreationSpawnLocationByRaceAndClass(playerClass, playerRace),
             };
             console.log('Character Created, Name: ' + req.body.name + ', Class: ' + req.body.class + ' Race: ' + playerRace + ', Username: ' + user.username);
         }

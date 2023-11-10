@@ -1,4 +1,4 @@
-//Base attributes for classes
+///Base attributes for classes
 const classesAttributes = {
     //NO CONFIGURATED
     'archer': {
@@ -888,7 +888,7 @@ const classesAttributes = {
         'debuffs': {},
     },
 }
-//Base attributes for races
+///Base attributes for races
 const raceAttributes = {
     'human': {
         //Stats
@@ -1334,6 +1334,87 @@ const raceAttributes = {
         'debuffs': {},
     },
 }
+///Spawn location for every race/class
+const characterCreationSpawnLocation = {
+    //Humans
+    "human/archer": "0,0",
+    "human/assasin": "0,0",
+    "human/bard": "0,0",
+    "human/beastmaster": "0,0",
+    "human/berserk": "0,0",
+    "human/druid": "0,0",
+    "human/mage": "0,0",
+    "human/paladin": "0,0",
+    "human/priest": "0,0",
+    "human/trickmagician": "0,0",
+    "human/weaponsmith": "0,0",
+    "human/witch": "0,0",
+    //Nature
+    "nature/archer": "0,0",
+    "nature/assasin": "0,0",
+    "nature/bard": "0,0",
+    "nature/beastmaster": "0,0",
+    "nature/berserk": "0,0",
+    "nature/druid": "0,0",
+    "nature/mage": "0,0",
+    "nature/paladin": "0,0",
+    "nature/priest": "0,0",
+    "nature/trickmagician": "0,0",
+    "nature/weaponsmith": "0,0",
+    "nature/witch": "0,0",
+    //Dytol
+    "dytol/archer": "0,0",
+    "dytol/assasin": "0,0",
+    "dytol/bard": "0,0",
+    "dytol/beastmaster": "0,0",
+    "dytol/berserk": "0,0",
+    "dytol/druid": "0,0",
+    "dytol/mage": "0,0",
+    "dytol/paladin": "0,0",
+    "dytol/priest": "0,0",
+    "dytol/trickmagician": "0,0",
+    "dytol/weaponsmith": "0,0",
+    "dytol/witch": "0,0",
+    //Aghars
+    "aghars/archer": "0,0",
+    "aghars/assasin": "0,0",
+    "aghars/bard": "0,0",
+    "aghars/beastmaster": "0,0",
+    "aghars/berserk": "0,0",
+    "aghars/druid": "0,0",
+    "aghars/mage": "0,0",
+    "aghars/paladin": "0,0",
+    "aghars/priest": "0,0",
+    "aghars/trickmagician": "0,0",
+    "aghars/weaponsmith": "0,0",
+    "aghars/witch": "0,0",
+    //Dark
+    "dark/archer": "0,0",
+    "dark/assasin": "0,0",
+    "dark/bard": "0,0",
+    "dark/beastmaster": "0,0",
+    "dark/berserk": "0,0",
+    "dark/druid": "0,0",
+    "dark/mage": "0,0",
+    "dark/paladin": "0,0",
+    "dark/priest": "0,0",
+    "dark/trickmagician": "0,0",
+    "dark/weaponsmith": "0,0",
+    "dark/witch": "0,0",
+    //Undead
+    "undead/archer": "0,0",
+    "undead/assasin": "0,0",
+    "undead/bard": "0,0",
+    "undead/beastmaster": "0,0",
+    "undead/berserk": "0,0",
+    "undead/druid": "0,0",
+    "undead/mage": "0,0",
+    "undead/paladin": "0,0",
+    "undead/priest": "0,0",
+    "undead/trickmagician": "0,0",
+    "undead/weaponsmith": "0,0",
+    "undead/witch": "0,0",
+}
 
 //Stats
 const statusAttributes = {
@@ -1341,6 +1422,21 @@ const statusAttributes = {
     'manaBonusPerIntelligence': 0.005,
 }
 
+/**
+* Return the specific coordinate spawn from the class and race
+*
+* @param {string} characterClass - Class
+* @param {string} characterRace - Race
+* @returns {string} - Returns a String containing the coordinate from spawn
+*/
+function returnCharacterCreationSpawnLocationByRaceAndClass(characterClass, characterRace) {
+    return "0,0";
+}
+
 module.exports.classesAttributes = classesAttributes;
 module.exports.raceAttributes = raceAttributes;
 module.exports.statusAttributes = statusAttributes;
+///This exports return usefull functions for translated configurations
+module.exports.gameplayConfigFunctions = {
+    returnCharacterCreationSpawnLocationByRaceAndClass: returnCharacterCreationSpawnLocationByRaceAndClass
+}

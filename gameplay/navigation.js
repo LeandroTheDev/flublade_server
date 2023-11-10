@@ -1,5 +1,5 @@
 //Dependencies
-const { accountsTable } = require("../start-server") //Accounts
+const { accountsTable, serverConfig } = require("../start-server") //Accounts
 
 //Socket
 const WebSocket = require("ws");
@@ -8,7 +8,11 @@ const wss = new WebSocket.Server({ port: 8081 });
 var ipTimeout = {};
 var ipConnected = {};
 
-//DDOS Protection
+/**
+* DDOS Protection safely block ips that is trying to connect multiple times in defined time
+*
+* @param {string} ip - Client IP
+*/
 function DDOSProtection(ip) {
     //ipTimeout == true => blocked
     //ipTimeout == undefined => unblocked
@@ -22,10 +26,29 @@ function DDOSProtection(ip) {
         //Reset Timer
         setTimeout(function () {
             delete ipTimeout[ip];
-        }, 5000);
+        }, serverConfig.socketDDOSTimer);
     }
 
     return isBlocked;
+}
+
+/**
+* Handle the validation socket, 
+* if client is invalid simple disconnect from the socket
+*
+* @param {WebSocket.Server} ws - Navigator Socket
+* @param {string} ip - Address from client
+* @param {Map} message - JSON Provided by the client
+* @param {boolean} valid - Validation
+* @param {string} username - Account Username from client
+* @returns {boolean} - Returns a boolean, false for invalid, true for valid
+*/
+function checkInvalidations(ws, ip, message, valid, username) {
+    //Check validation
+    if (valid) return true;
+    console.log("\x1b[33m[Navigation]\x1b[0m Invalid Player: " + username);
+    ws.close();
+    return false;
 }
 
 /**
@@ -68,12 +91,23 @@ function authenticate(ws, ip, message) {
     });
 }
 
+/**
+* This function is called when te client whants to receive worlds data, 
+* this handle a tick timer to send the client world data for the chunk he is
+*
+* @param {WebSocket.Server} ws - Navigator Socket
+* @param {string} ip - Address from client
+* @param {Map} message - JSON Provided by the client
+* @returns {Map} - Returns a Map containing the username, empty username if errors occurs
+*/
+function receiveDatas(ws, ip, message) { }
+
 wss.on("connection", async (ws, connectionInfo) => {
     const ip = connectionInfo.socket.remoteAddress
     //Check DDOSProtection and if the Client is already connected
     var connectionClosed = false;
     if (DDOSProtection(ip) || ipConnected[ip] != undefined) {
-        console.log("\x1b[33m[Navigation] Connection Blocked: \x1b[0m" + ip);
+        console.log("\x1b[33m[Navigation]\x1b[0m Connection Blocked: " + ip);
         connectionClosed = true;
         ws.close();
     }
@@ -94,11 +128,13 @@ wss.on("connection", async (ws, connectionInfo) => {
         //Job Selector
         switch (message["job"]) {
             case "authenticate": authenticate(ws, ip, message).then(function (data) { username = data.username; id = message["id"]; valid = data.username != ""; });
+            case "receiveDatas": checkInvalidations(ws, ip, message, valid, username); receiveDatas(ws, ip, message);
         }
     });
     ws.on("close", () => {
         //Check if current ip is listed in ipConnected then remove
         if (ipConnected[ip] != undefined) delete ipConnected[ip];
+        console.log('\x1b[90m[Navigation]\x1b[0m User Disconnected: ' + username);
     });
 });
 console.log("Navigator Socket started in ports 8081")

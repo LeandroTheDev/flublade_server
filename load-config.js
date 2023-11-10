@@ -1,8 +1,16 @@
 const fs = require('fs');
 
 const archive = "#Server Configuration\n" +
-    "serverName=\"My Custom Server\"\n" +
-    "gameVersion=\"1.0.0\"";
+    "#Server Name\n" +
+    "serverName=My Custom Server\n" +
+    "#Game Version, needs to match with client\n" +
+    "gameVersion=1.0.0\n" +
+    "#In milisseconds, the timer until client need to wait after connecting again\n" +
+    "socketDDOSTimer=1000\n" +
+    "#Quantity of times the client can request a response from http server until the timer\n" +
+    "httpDDOSLimitUntilTimer=5\n" +
+    "#In milisseconds, the timer until client need to wait after requesting response again\n" +
+    "httpDDOSTimer=5000";
 
 //Read Config Files
 function readFile() {
@@ -65,8 +73,13 @@ module.exports = function () {
         let configs = await readFile();
         configs = createMap(configs);
         //Exports
+        //Int configs need to be placed a parseInt()
+        //Booleans configs need to be placed the "variable == "true""
         module.exports.serverName = configs.serverName;
         module.exports.gameVersion = configs.gameVersion;
+        module.exports.socketDDOSTimer = parseInt(configs.socketDDOSTimer);
+        module.exports.httpDDOSLimitUntilTimer = parseInt(configs.httpDDOSLimitUntilTimer);
+        module.exports.httpDDOSTimer = parseInt(configs.httpDDOSTimer);
         console.log('\x1b[32mSuccessfully Loaded Configurations\x1b[0m');
         resolve();
     });

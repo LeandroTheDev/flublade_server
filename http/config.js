@@ -29,12 +29,12 @@ function init(resolve) {
             //Reset Timer
             setTimeout(function () {
                 delete ipTimeout[req.ip];
-            }, 5000);
+            }, serverConfig.httpDDOSTimer);
         }
         else ipTimeout[req.ip] += 1;
 
-        //If the ip try to communicate 3 times then
-        if (ipTimeout[req.ip] > 3) ipTimeout[req.ip] = 99;
+        //If the ip try to communicate "httpDDOSLimitUntilTimer" times then
+        if (ipTimeout[req.ip] > serverConfig.httpDDOSLimitUntilTimer) ipTimeout[req.ip] = 99;
 
         next();
     });

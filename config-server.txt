@@ -1,3 +1,11 @@
 #Server Configuration
+#Server Name
 serverName=My Custom Server
+#Game Version, needs to match with client
 gameVersion=1.0.0
+#In milisseconds, the timer until client need to wait after connecting again
+socketDDOSTimer=1000
+#Quantity of times the client can request a response from http server until the timer
+httpDDOSLimitUntilTimer=5
+#In milisseconds, the timer until client need to wait after requesting response again
+httpDDOSTimer=5000
