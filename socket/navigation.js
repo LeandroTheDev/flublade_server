@@ -1,12 +1,29 @@
 //Dependencies
-const { accountsTable, serverConfig } = require("../start-server") //Accounts
+const { accountsTable, serverConfig } = require("../start-server")
 
 //Socket
 const WebSocket = require("ws");
 const wss = new WebSocket.Server({ port: 8081 });
-//Used for DDOS Protection
+
+//DDOS Protection Declarations
+/**Stores the IP to control the timeout*/
 var ipTimeout = {};
+/**Stores all ips connected*/
 var ipConnected = {};
+
+//Navigation Declaration
+/**All Players Online, index by account ID, includes:
+ * 
+ * coordinateChunk = Actual chunk of the character
+ * 
+ * coordinate = Full coordinate of the character position
+ * 
+ * selectedCharacterID = Selected character of the account
+ * 
+ * ws = Websocket to manage the client
+ * 
+ */
+var playersOnline = {};
 
 /**
 * DDOS Protection safely block ips that is trying to connect multiple times in defined time
@@ -81,27 +98,42 @@ function authenticate(ws, ip, message) {
             return;
         }
         console.log('\x1b[32m[Navigation]\x1b[0m User Connected: ' + user.username);
-        //Success
         ws.send(JSON.stringify({
             "message": "Success",
             "error": false
-        }));
+        }))
+        //Success
         resolve({ "username": user.username });
         return;
     });
 }
 
 /**
-* This function is called when te client whants to receive worlds data, 
+* This function is called when the client whants to receive worlds data, 
 * this handle a tick timer to send the client world data for the chunk he is
 *
 * @param {WebSocket.Server} ws - Navigator Socket
 * @param {string} ip - Address from client
 * @param {Map} message - JSON Provided by the client
+* @param {number} id - Account ID
 * @returns {Map} - Returns a Map containing the username, empty username if errors occurs
 */
-function receiveDatas(ws, ip, message) { }
+async function receiveDatas(ws, ip, message, id) {
+    let selectedCharacter = message["selectedCharacter"];
+    let account = await accountsTable.findOne({
+        attributes: ['characters'],
+        where: { "id": id }
+    });
+    character = JSON.parse(account.dataValues.characters);
+    character = character["character" + selectedCharacter];
+    playersOnline[id] = {
+        coordinateChunk: convertCoordinateToCoordinateChunk(character["location"]),
+        coordinate: character["location"]
+    }
+    return selectedCharacter;
+}
 
+//Socket Conenction
 wss.on("connection", async (ws, connectionInfo) => {
     const ip = connectionInfo.socket.remoteAddress
     //Check DDOSProtection and if the Client is already connected
@@ -118,17 +150,17 @@ wss.on("connection", async (ws, connectionInfo) => {
     var valid = false;
     var username = "";
     var id = 0;
+    var selectedCharacter = 0;
 
     ws.on("message", async (data) => {
         //Check if connection is closed
         if (connectionClosed) return;
         //Receive message from Client
         const message = JSON.parse(data.toString());
-
         //Job Selector
         switch (message["job"]) {
-            case "authenticate": authenticate(ws, ip, message).then(function (data) { username = data.username; id = message["id"]; valid = data.username != ""; });
-            case "receiveDatas": checkInvalidations(ws, ip, message, valid, username); receiveDatas(ws, ip, message);
+            case "authenticate": authenticate(ws, ip, message).then(function (data) { username = data.username; id = message["id"]; valid = data.username != ""; }); break;
+            case "receiveDatas": checkInvalidations(ws, ip, message, valid, username); receiveDatas(ws, ip, message, id).then(function (data) { selectedCharacter = data.selectedCharacter }); break;
         }
     });
     ws.on("close", () => {
@@ -137,5 +169,22 @@ wss.on("connection", async (ws, connectionInfo) => {
         console.log('\x1b[90m[Navigation]\x1b[0m User Disconnected: ' + username);
     });
 });
+
 console.log("Navigator Socket started in ports 8081")
 module.exports.navigatorSocket = wss;
+
+//Utils
+/**
+* Converts the coordinate into coordinateChunk
+*
+* @param {string} coordinate - Coordinate of the characters
+* @returns {string} - Returns the coordinateChunk
+*/
+async function convertCoordinateToCoordinateChunk(characterCoordinate) {
+    const coordinate = characterCoordinate.split(',');
+    const chunkSize = 15;
+    const coordinateY = Math.floor(coordinate[0] / chunkSize);
+    const coordinateX = Math.floor(coordinate[1] / chunkSize);
+
+    return `${coordinateY},${coordinateX}`;
+}

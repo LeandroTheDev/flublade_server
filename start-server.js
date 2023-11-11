@@ -1,6 +1,4 @@
 console.log('\x1b[32mStarting Server\x1b[0m');
-const { serverDatabase, worldDatabase } = require("./database/config");
-
 initializeServer();
 
 //Initialize Server
@@ -12,6 +10,7 @@ function initializeServer() {
         module.exports.serverConfig = serverConfig;
         console.log("Connecting to World Database");
         //Connect to the Worlds Database
+        const { serverDatabase, worldDatabase } = require("./database/config");
         worldDatabase.authenticate().then(() => {
             module.exports.worldDatabase = worldDatabase;
             console.log('\x1b[32mSuccessfully Connected to World Database\x1b[0m');
@@ -59,7 +58,7 @@ function startResponses() {
 
 //Starts the sockets to receive and give players real time informations
 function startSockets() {
-    const { navigatorSocket } = require("./gameplay/navigation");
+    const { navigatorSocket } = require("./socket/navigation");
     const commands = require("./commands");
 }
 

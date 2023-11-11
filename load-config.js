@@ -10,7 +10,17 @@ const archive = "#Server Configuration\n" +
     "#Quantity of times the client can request a response from http server until the timer\n" +
     "httpDDOSLimitUntilTimer=5\n" +
     "#In milisseconds, the timer until client need to wait after requesting response again\n" +
-    "httpDDOSTimer=5000";
+    "httpDDOSTimer=5000\n" +
+    "#Database IP for the server connect\n" +
+    "databaseIP=127.0.0.1\n" +
+    "#Database User, the account name to server login into database\n" +
+    "databaseUser=flublade\n" +
+    "#Database Password of the account\n" +
+    "databasePassword=i@Dhs4e5E%fGz&ngbY2m&AGRCVlskBUrrCnsYFUze&fhxehb#j\n" +
+    "#Navigation Socket Tick Rate, Updates Per Second\n" +
+    "navigatorTicks=15\n" +
+    "#Chunk Radius to server load and send the datas\n" +
+    "chunkRadiusView=3";
 
 //Read Config Files
 function readFile() {
@@ -80,6 +90,11 @@ module.exports = function () {
         module.exports.socketDDOSTimer = parseInt(configs.socketDDOSTimer);
         module.exports.httpDDOSLimitUntilTimer = parseInt(configs.httpDDOSLimitUntilTimer);
         module.exports.httpDDOSTimer = parseInt(configs.httpDDOSTimer);
+        module.exports.databaseIP = configs.databaseIP;
+        module.exports.databaseUser = configs.databaseUser;
+        module.exports.databasePassword = configs.databasePassword;
+        module.exports.navigatorTicks = parseInt(configs.navigatorTicks);
+        module.exports.chunkRadiusView = parseInt(configs.chunkRadiusView);
         console.log('\x1b[32mSuccessfully Loaded Configurations\x1b[0m');
         resolve();
     });

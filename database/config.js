@@ -1,20 +1,17 @@
 //Dependencies
 const Sequelize = require('sequelize');
-
-const adminName = "flublade";
-const adminPassword = "i@Dhs4e5E%fGz&ngbY2m&AGRCVlskBUrrCnsYFUze&fhxehb#j";
-const databaseIP = "192.168.15.151";
+const { serverConfig } = require('../start-server');
 
 //Database informations
-const server = new Sequelize('flublade_server', adminName, adminPassword, {
-    host: databaseIP,
+const server = new Sequelize('flublade_server', serverConfig.databaseUser, serverConfig.databasePassword, {
+    host: serverConfig.databaseIP,
     dialect: "mariadb",
     logging: false,
     connectTimeout: 10000,
 });
 
-const world = new Sequelize('flublade_world', adminName, adminPassword, {
-    host: databaseIP,
+const world = new Sequelize('flublade_world', serverConfig.databaseUser, serverConfig.databasePassword, {
+    host: serverConfig.databaseIP,
     dialect: "mariadb",
     logging: false,
     connectTimeout: 10000,

@@ -9,3 +9,9 @@ socketDDOSTimer=1000
 httpDDOSLimitUntilTimer=5
 #In milisseconds, the timer until client need to wait after requesting response again
 httpDDOSTimer=5000
+#Database IP
+databaseIP=189.27.183.128
+#Database User
+databaseUser=flublade
+#Database Password
+databasePassword=i@Dhs4e5E%fGz&ngbY2m&AGRCVlskBUrrCnsYFUze&fhxehb#j
