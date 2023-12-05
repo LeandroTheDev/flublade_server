@@ -3,15 +3,20 @@
 serverName=My Custom Server
 #Game Version, needs to match with client
 gameVersion=1.0.0
-#In milisseconds, the timer until client need to wait after connecting again
+
+#Connection Configuration#In milisseconds, the timer until client need to wait after connecting again
 socketDDOSTimer=1000
 #Quantity of times the client can request a response from http server until the timer
 httpDDOSLimitUntilTimer=5
 #In milisseconds, the timer until client need to wait after requesting response again
 httpDDOSTimer=5000
-#Database IP
-databaseIP=189.27.183.128
-#Database User
+#Database IP for the server connect
+databaseIP=192.168.15.151
+#Database User, the account name to server login into database
 databaseUser=flublade
-#Database Password
+#Database Password of the account
 databasePassword=i@Dhs4e5E%fGz&ngbY2m&AGRCVlskBUrrCnsYFUze&fhxehb#j
+#Navigation Socket Tick Rate, Updates Per Second
+navigatorTicks=150
+#Chunk Radius to server load and send the datas
+chunkRadiusView=2

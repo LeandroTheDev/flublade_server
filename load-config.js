@@ -5,6 +5,8 @@ const archive = "#Server Configuration\n" +
     "serverName=My Custom Server\n" +
     "#Game Version, needs to match with client\n" +
     "gameVersion=1.0.0\n" +
+    "\n" +
+    "#Connection Configuration" +
     "#In milisseconds, the timer until client need to wait after connecting again\n" +
     "socketDDOSTimer=1000\n" +
     "#Quantity of times the client can request a response from http server until the timer\n" +
@@ -17,9 +19,9 @@ const archive = "#Server Configuration\n" +
     "databaseUser=flublade\n" +
     "#Database Password of the account\n" +
     "databasePassword=i@Dhs4e5E%fGz&ngbY2m&AGRCVlskBUrrCnsYFUze&fhxehb#j\n" +
-    "#Navigation Socket Tick Rate, Updates Per Second\n" +
+    "#Navigation Socket Update every millisecond\n" +
     "navigatorTicks=15\n" +
-    "#Chunk Radius to server load and send the datas\n" +
+    "#Chunk Radius to server load and send the datas, if 0 only loads the chunk that players is in\n" +
     "chunkRadiusView=3";
 
 //Read Config Files

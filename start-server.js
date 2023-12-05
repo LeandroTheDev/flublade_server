@@ -18,6 +18,9 @@ function initializeServer() {
             //Read World and Save in Navigators Table
             const { worlds, navigatorTiles, navigatorEntitys } = require("./database/worlds/worlds");
             readAndWriteWorld(worlds, navigatorTiles, navigatorEntitys).then((result) => {
+                // Exports the navigators
+                module.exports.navigatorTiles = navigatorTiles;
+                module.exports.navigatorEntitys = navigatorEntitys;
                 console.log("Connecting to Server Database");
                 //Connect to the Server Database
                 serverDatabase.authenticate().then(() => {
