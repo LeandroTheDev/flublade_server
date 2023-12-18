@@ -11,12 +11,12 @@ httpDDOSLimitUntilTimer=5
 #In milisseconds, the timer until client need to wait after requesting response again
 httpDDOSTimer=5000
 #Database IP for the server connect
-databaseIP=192.168.15.151
+databaseIP=191.201.111.44
 #Database User, the account name to server login into database
 databaseUser=flublade
 #Database Password of the account
 databasePassword=i@Dhs4e5E%fGz&ngbY2m&AGRCVlskBUrrCnsYFUze&fhxehb#j
-#Navigation Socket Tick Rate, Updates Per Second
-navigatorTicks=150
-#Chunk Radius to server load and send the datas
-chunkRadiusView=2
+#Navigation Socket Update every millisecond
+navigatorTicks=15
+#Chunk Radius to server load and send the datas, if 0 only loads the chunk that players is in
+chunkRadiusView=3

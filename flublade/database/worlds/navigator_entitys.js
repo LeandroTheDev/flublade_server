@@ -1,6 +1,6 @@
 //Dependencies
 const Sequelize = require('sequelize');
-const { worldDatabase } = require('../../start-server');
+const { worldDatabase } = require('../../../initialize');
 
 //Database tables
 const navigatorEntitys = worldDatabase.define('navigator_entitys', {

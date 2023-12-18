@@ -1,26 +1,21 @@
 //Dependencies
 const Sequelize = require('sequelize');
-const { worldDatabase } = require('../../start-server');
+const { worldDatabase } = require('../../../initialize');
 
 //Database tables
-const navigatorTiles = worldDatabase.define('navigator_players', {
-    coordinateChunk: {
+const navigatorTiles = worldDatabase.define('navigator_tiles', {
+    coordinate: {
         //This indicates the maximum chunk: 99999,99999
         type: "varchar(11)",
         allowNull: false,
         primaryKey: true
     },
-    coordinate: {
-        type: "varchar(99)",
-        allowNull: false,
-        primaryKey: true
-    },
-    accountId: {
-        type: "varchar(12)",
+    tiles: {
+        type: "longtext",
         allowNull: false,
         defaultValue: "[]"
     },
-    character: {
+    attributes: {
         type: "longtext",
         allowNull: false,
         defaultValue: "{}"

@@ -1,6 +1,6 @@
 const express = require('express');
 const http = express();
-const { serverConfig } = require('../start-server');
+const { serverConfig } = require('../../initialize');
 //Used for DDOS Protection
 var ipTimeout = {};
 

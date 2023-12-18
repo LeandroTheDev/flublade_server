@@ -11,7 +11,7 @@ const archive = "#Server Configuration\n" +
     "socketDDOSTimer=1000\n" +
     "#Quantity of times the client can request a response from http server until the timer\n" +
     "httpDDOSLimitUntilTimer=5\n" +
-    "#In milisseconds, the timer until client need to wait after requesting response again\n" +
+    "#In milisseconds, the timer to reset the DDOSLimit for the client\n" +
     "httpDDOSTimer=5000\n" +
     "#Database IP for the server connect\n" +
     "databaseIP=127.0.0.1\n" +

@@ -3,20 +3,20 @@ initializeServer();
 
 //Initialize Server
 function initializeServer() {
-    const serverConfig = require("./load-config");
+    const serverConfig = require("./server/load-config");
     //Load Configurations
     serverConfig().then(function () {
         //Exports Globally
         module.exports.serverConfig = serverConfig;
         console.log("Connecting to World Database");
-        //Connect to the Worlds Database
-        const { serverDatabase, worldDatabase } = require("./database/config");
+        //Connect to the Worlds Databas
+        const { serverDatabase, worldDatabase } = require("./flublade/database/config");
         worldDatabase.authenticate().then(() => {
             module.exports.worldDatabase = worldDatabase;
             console.log('\x1b[32mSuccessfully Connected to World Database\x1b[0m');
 
             //Read World and Save in Navigators Table
-            const { worlds, navigatorTiles, navigatorEntitys } = require("./database/worlds/worlds");
+            const { worlds, navigatorTiles, navigatorEntitys } = require("./flublade/database/worlds/worlds");
             readAndWriteWorld(worlds, navigatorTiles, navigatorEntitys).then((result) => {
                 // Exports the navigators
                 module.exports.navigatorTiles = navigatorTiles;
@@ -29,7 +29,7 @@ function initializeServer() {
 
                     console.log("Connecting Accounts Table")
                     //Connect to the Accounts Table
-                    const accountsTable = require("./database/accountsTable");
+                    const accountsTable = require("./flublade/database/accountsTable");
                     module.exports.accountsTable = accountsTable;
 
                     //Initialize Responses
@@ -48,21 +48,21 @@ function initializeServer() {
 
 //Starts the responses server for receiving incoming http requests
 function startResponses() {
-    const http = require("./http/config");
+    const http = require("./flublade/http/config");
     //Initialize the http Server
     http().then(connection => {
         module.exports.http = connection;
-        const serverconfig = require("./load-config");
-        const administration = require("./http/account/administration");
-        const character = require("./http/account/character");
+        const serverconfig = require("./server/load-config");
+        const administration = require("./flublade/http/account/administration");
+        const character = require("./flublade/http/account/character");
         startSockets();
     });
 }
 
 //Starts the sockets to receive and give players real time informations
 function startSockets() {
-    const { navigatorSocket } = require("./socket/navigation");
-    const commands = require("./commands");
+    const { navigatorSocket } = require("./flublade/socket/navigation");
+    const commands = require("./server/commands");
 }
 
 //Read all world data and save in database

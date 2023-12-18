@@ -1,6 +1,6 @@
 //Dependencies
 const Sequelize = require('sequelize');
-const { serverConfig } = require('../start-server');
+const { serverConfig } = require('../../initialize');
 
 //Database informations
 const server = new Sequelize('flublade_server', serverConfig.databaseUser, serverConfig.databasePassword, {

@@ -1,7 +1,7 @@
 const localHttp = require('axios');
 const readline = require('readline');
 const bcrypt = require('bcryptjs');
-const { accountsDatabase } = require('./start-server');
+const { accountsTable } = require('../initialize');
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -78,7 +78,7 @@ function terminalCommand() {
       //Remove
       if (command.substring(0, 14) === "account remove") {
         command = command.substring(15);
-        accountsDatabase.destroy({
+        accountsTable.destroy({
           where: {
             username: command
           }
@@ -97,7 +97,7 @@ function terminalCommand() {
       //List
       if (command.substring(0, 12) === "account list") {
         //Find all usernames in database
-        accountsDatabase.findAll({ attributes: ['username'] }).then(users => {
+        accountsTable.findAll({ attributes: ['username'] }).then(users => {
           //Check if exist any accounts in database
           if (users.length == 0) {
             console.log("0 Accounts Created");
@@ -117,7 +117,7 @@ function terminalCommand() {
         //Encrypte password
         bcrypt.hash(password, 8).then(encryptedPassword => {
           //Update in database
-          accountsDatabase.update({ password: encryptedPassword }, { where: { username: username } }).then(result => {
+          accountsTable.update({ password: encryptedPassword }, { where: { username: username } }).then(result => {
             if (result == 1) {
               console.log("Command Success");
             } else {
@@ -134,7 +134,7 @@ function terminalCommand() {
       if (command.substring(0, 18) === "account characters") {
         command = command.substring(19);
         //Find all characters of username
-        accountsDatabase.findAll({
+        accountsTable.findAll({
           attributes: ['characters'],
           where: {
             username: command

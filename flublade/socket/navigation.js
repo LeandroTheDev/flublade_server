@@ -1,6 +1,6 @@
 //Dependencies
 const config = require("../http/config");
-const { accountsTable, serverConfig, navigatorTiles } = require("../start-server")
+const { accountsTable, serverConfig, navigatorTiles } = require("../../initialize")
 
 //Socket
 const WebSocket = require("ws");
@@ -199,6 +199,7 @@ async function retrievePlayersWorldTiles() {
             x = playerX - serverConfig.chunkRadiusView;
         }
         //Send the player
+        console.log("send");
         player.socket.send(JSON.stringify({
             "message": "AllChunkUpdate",
             "error": false,

@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 
 //Http Connection
 const { classesAttributes, raceAttributes } = require('../../gameplay/config');
-const { http, accountsTable } = require('../../start-server');
+const { http, accountsTable } = require('../../../initialize');
 const { status } = require('../../gameplay/status');
 const { gameplayConfigFunctions } = require('../../gameplay/config');
 
