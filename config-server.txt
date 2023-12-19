@@ -19,4 +19,4 @@ databasePassword=i@Dhs4e5E%fGz&ngbY2m&AGRCVlskBUrrCnsYFUze&fhxehb#j
 #Navigation Socket Update every millisecond
 navigatorTicks=15
 #Chunk Radius to server load and send the datas, if 0 only loads the chunk that players is in
-chunkRadiusView=3
+chunkRadiusView=1

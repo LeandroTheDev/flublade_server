@@ -158,7 +158,7 @@ async function retrievePlayersWorldTiles() {
     for (const userId in playersOnline) {
         //Process the player
         const player = playersOnline[userId];
-        
+
         //Null check
         if (playersChunkCoordinate[userId] == undefined) playersChunkCoordinate[userId] = {}
         //Check if the player needs update from the chunk
@@ -199,14 +199,19 @@ async function retrievePlayersWorldTiles() {
             x = playerX - serverConfig.chunkRadiusView;
         }
         //Send the player
-        console.log("send");
         player.socket.send(JSON.stringify({
-            "message": "AllChunkUpdate",
-            "error": false,
-            "chunks": chunks
+            message: "All Chunks Update",
+            error: true,
+            chunks: chunks
         }));
     }
 }
+
+/**
+* Called every navigator ticks per seconds
+* this will retrieve all entitys in location for the player
+*/
+async function retrievePlayersEntitys() {}
 
 //Socket Conenction
 wss.on("connection", async (ws, connectionInfo) => {
@@ -239,10 +244,13 @@ wss.on("connection", async (ws, connectionInfo) => {
         }
     });
     ws.on("close", () => {
+        ///Cleaning cache from the player
         //Check if current ip is listed in ipConnected then remove
         if (ipConnected[ip] != undefined) delete ipConnected[ip];
         //Check if exist in online player and remove from online players
         if (playersOnline[id] != undefined) delete playersOnline[id];
+        //Check if exist in loaded chunks and remove from loaded chunks
+        if (playersChunkCoordinate[id] != undefined) delete playersChunkCoordinate[id];
         console.log('\x1b[90m[Navigation]\x1b[0m User Disconnected: ' + username);
     });
 });
@@ -268,3 +276,5 @@ function convertCoordinateToCoordinateChunk(characterCoordinate) {
 
 // Retrieve player world tiles every tick
 setInterval(retrievePlayersWorldTiles, serverConfig.navigatorTicks);
+// Retrieve player entitys every tick
+setInterval(retrievePlayersEntitys, serverConfig.navigatorTicks);
