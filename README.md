@@ -32,7 +32,7 @@ Anti cheat, in most cases the server process all datas to prevent user data mani
 - Also change the gameplay/config.js to configure the server the way you prefer
 - After that the server needs the dependencies, download the [dependencies](https://github.com/LeandroTheDev/flublade_backend/tree/main#dependencies) with "npm install name"
 - And then the server is ready
-- Write in terminal "node start-server.js" to start server
+- Write in terminal "node initialize.js" to start server
 
 ![image](https://user-images.githubusercontent.com/106118473/236652006-d19962d9-2f60-46ba-8ae0-5cf136f2664b.png)
 

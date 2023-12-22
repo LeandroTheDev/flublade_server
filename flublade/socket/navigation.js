@@ -29,6 +29,10 @@ var playersOnline = {};
 * coordinateChunk = Last character Chunk
 */
 var playersChunkCoordinate = {};
+/**Stores player last position to be updated in ticks by account ID, in retrievePlayerPositions
+* position = [0,0]
+*/
+var playerCoordinate = {};
 
 /**
 * DDOS Protection safely block ips that is trying to connect multiple times in defined time
@@ -201,7 +205,7 @@ async function retrievePlayersWorldTiles() {
         //Send the player
         player.socket.send(JSON.stringify({
             message: "All Chunks Update",
-            error: true,
+            error: false,
             chunks: chunks
         }));
     }
@@ -211,7 +215,50 @@ async function retrievePlayersWorldTiles() {
 * Called every navigator ticks per seconds
 * this will retrieve all entitys in location for the player
 */
-async function retrievePlayersEntitys() {}
+async function retrievePlayersEntitys() {
+    //Swipe all players
+    for (const userId in playersOnline) {
+        const player = playersOnline[userId];
+        player.socket.send(JSON.stringify({
+            message: "Entity Update",
+            error: false,
+            playerPosition: player["coordinate"],
+            entitys: []
+        }));
+    }
+}
+
+/**
+* Called every navigator ticks per seconds
+* this will definitively update the position in the playerUpdate
+*/
+async function retrievePlayerPositions() {
+    for (const userId in playerCoordinate) {
+        //Convert the cordinate into array
+        let coordinate = playersOnline[userId]["coordinate"].split(',');
+        console.log(coordinate);
+        //Plus the coordinates with the position
+        coordinate[0] = parseFloat(coordinate[0]);
+        coordinate[1] = parseFloat(coordinate[1]);
+        coordinate[0] += playerCoordinate[userId][0];
+        coordinate[1] += playerCoordinate[userId][1];
+        //Update in cache
+        playersOnline[userId]["coordinate"] = coordinate[0] + "," + coordinate[1];
+        //Update the chunk
+        playersOnline[userId]["coordinateChunk"] = convertCoordinateToCoordinateChunk(playersOnline[userId]["coordinate"]);
+        delete playerCoordinate[userId];
+    }
+}
+
+/**
+* The client send the direction for the player
+* we need to handle this and add to playerCoordinate
+*/
+function updatePlayerDirection(ws, ip, message, id) {
+    x = message["direction"][0];
+    y = message["direction"][1];
+    playerCoordinate[id] = [x, y];
+}
 
 //Socket Conenction
 wss.on("connection", async (ws, connectionInfo) => {
@@ -241,6 +288,7 @@ wss.on("connection", async (ws, connectionInfo) => {
         switch (message["job"]) {
             case "authenticate": authenticate(ws, ip, message).then(function (data) { username = data.username; id = message["id"]; valid = data.username != ""; }); break;
             case "receiveDatas": checkInvalidations(ws, ip, message, valid, username); receiveDatas(ws, ip, message, id).then(function (data) { selectedCharacter = data.selectedCharacter }); break;
+            case "updatePlayerPosition": checkInvalidations(ws, ip, message, valid, username); updatePlayerDirection(ws, ip, message, id); break;
         }
     });
     ws.on("close", () => {
@@ -278,3 +326,5 @@ function convertCoordinateToCoordinateChunk(characterCoordinate) {
 setInterval(retrievePlayersWorldTiles, serverConfig.navigatorTicks);
 // Retrieve player entitys every tick
 setInterval(retrievePlayersEntitys, serverConfig.navigatorTicks);
+// Update per tick the players position
+setInterval(retrievePlayerPositions, serverConfig.navigatorTicks);
