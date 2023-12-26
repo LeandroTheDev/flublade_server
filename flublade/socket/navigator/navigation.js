@@ -1,6 +1,6 @@
 //Dependencies
-const config = require("../http/config");
-const { accountsTable, serverConfig, navigatorTiles } = require("../../initialize")
+const config = require("../../http/config");
+const { accountsTable, serverConfig, navigatorTiles } = require("../../../initialize")
 
 //Socket
 const WebSocket = require("ws");
@@ -33,6 +33,27 @@ var playersChunkCoordinate = {};
 * position = [0,0]
 */
 var playerCoordinate = {};
+/**Stores loaded chunks in the server by chunk position
+* 
+* tiles = List
+*
+* collisionTiles = Map / contains by coordinates all the collision that entity cannot pass throught see tilesCollision in config for details
+*
+* despawnTimeoutID = int / this is the returned id from setTimeout
+*/
+var loadedChunks = {};
+/**Stores all loaded entity in the server by entity GUID
+* 
+* coordinateChunk = A string of actual chunk of the entity
+*
+* coordinate = A string containing the full coordinate of the entity position: "10,24"
+*/
+var loadedEntitys = {};
+
+
+//
+//SECURITY
+//
 
 /**
 * DDOS Protection safely block ips that is trying to connect multiple times in defined time
@@ -117,6 +138,10 @@ function authenticate(ws, ip, message) {
     });
 }
 
+//
+//CHUNK SYSTEM / DATA
+//
+
 /**
 * This function is called when the client whants to receive worlds data, 
 * this handle a tick timer to send the client world data for the chunk he is
@@ -151,6 +176,63 @@ async function receiveDatas(ws, ip, message, id) {
     retrievePlayersWorldTiles(true);
 
     return selectedCharacter;
+}
+
+/**
+* Send the player all chunks in radius
+* this is generally called when the client ask for update, because
+* a problem occurs
+*/
+async function sendPlayerLocalChunks(ws, ip, message, id) {
+    console.log("ID: " + id + " asked for chunk update")
+    //Process the player
+    const player = playersOnline[id];
+    //Null check
+    if (playersChunkCoordinate[id] == undefined)
+        playersChunkCoordinate[id] = {
+            coordinateChunk: convertCoordinateToCoordinateChunk(playersOnline[id]["coordinate"]),
+        }
+    //Add the chunk in playersChunkCoordinate
+    playersChunkCoordinate[id]["coordinateChunk"] = player["coordinateChunk"];
+
+    //Create the chunks variable
+    let chunks = [];
+
+    //Dividing the x and y from the coordinate
+    const [playerX, playerY] = player["coordinateChunk"].split(",").map(n => parseInt(n));
+    //We need to reduce to calculate the view
+    let x = playerX - serverConfig.chunkRadiusView;
+    let y = playerY - serverConfig.chunkRadiusView;
+
+    //Swipe the chunks
+    //Explaining the swipe calculation,
+    //We receive the chunk radius and multiplies to 2 because we want the negative and positive
+    //We also add 1 because we need to consider the actual position of the player
+    for (let i = 0; i < serverConfig.chunkRadiusView * 2 + 1; i++) { //This is the Y
+        for (let j = 0; j < serverConfig.chunkRadiusView * 2 + 1; j++) { // This is the X
+            //Find the the chunk in database
+            let chunk = await navigatorTiles.findOne({
+                attributes: ['tiles', 'attributes'],
+                where: {
+                    coordinate: x + "," + y,
+                }
+            });
+            //Check if chunk exist
+            if (chunk == null) chunks.push(null);
+            //Add the chunk in chunks variable
+            else chunks.push(chunk.dataValues);
+            x++;
+        }
+        y++;
+        //Reset the X
+        x = playerX - serverConfig.chunkRadiusView;
+    }
+    //Send the player
+    ws.send(JSON.stringify({
+        message: "All Chunks Update",
+        error: false,
+        chunks: chunks
+    }));
 }
 
 /**
@@ -209,11 +291,13 @@ async function retrievePlayersWorldTiles(forceReload = false) {
             x = playerX - serverConfig.chunkRadiusView;
         }
         //Send the player
-        player.socket.send(JSON.stringify({
-            message: "All Chunks Update",
-            error: false,
-            chunks: chunks
-        }));
+        setTimeout(function () { //We need to delay to prevent desyncronization
+            player.socket.send(JSON.stringify({
+                message: "All Chunks Update",
+                error: false,
+                chunks: chunks
+            }));
+        }, 100);
     }
 }
 
@@ -267,6 +351,35 @@ function updatePlayerDirection(ws, ip, message, id) {
     playerCoordinate[id] = [x * 3, y * 3];
 }
 
+//
+//UTILS
+//
+/**
+* Converts the coordinate into coordinateChunk
+*
+* @param {string} coordinate - Coordinate of the characters
+* @returns {string} - Returns the coordinateChunk
+*/
+function convertCoordinateToCoordinateChunk(characterCoordinate) {
+    const coordinate = characterCoordinate.split(',');
+    const chunkSize = 480; //Every tile has 32 size, every chunk has 15 tiles, so  32 * 12 = 480
+    const coordinateY = Math.floor(coordinate[0] / chunkSize);
+    const coordinateX = Math.floor(coordinate[1] / chunkSize);
+
+    return `${coordinateY},${coordinateX}`;
+}
+
+//
+//TICKRATE
+//
+// Retrieve player world tiles every tick
+setInterval(retrievePlayersWorldTiles, serverConfig.navigatorTicks);
+// Retrieve player entitys every tick
+setInterval(retrievePlayersEntitys, serverConfig.navigatorTicks);
+// Update per tick the players position
+setInterval(retrievePlayerPositions, serverConfig.navigatorTicks);
+
+
 //Socket Conenction
 wss.on("connection", async (ws, connectionInfo) => {
     const ip = connectionInfo.socket.remoteAddress
@@ -296,6 +409,7 @@ wss.on("connection", async (ws, connectionInfo) => {
             case "authenticate": authenticate(ws, ip, message).then(function (data) { username = data.username; id = message["id"]; valid = data.username != ""; }); break;
             case "receiveDatas": checkInvalidations(ws, ip, message, valid, username); receiveDatas(ws, ip, message, id).then(function (data) { selectedCharacter = data.selectedCharacter }); break;
             case "updatePlayerPosition": checkInvalidations(ws, ip, message, valid, username); updatePlayerDirection(ws, ip, message, id); break;
+            case "updatePlayerChunk": checkInvalidations(ws, ip, message, valid, username); sendPlayerLocalChunks(ws, ip, message, id); break;
         }
     });
     ws.on("close", () => {
@@ -314,26 +428,3 @@ wss.on("connection", async (ws, connectionInfo) => {
 
 console.log("Navigator Socket started in ports 8081")
 module.exports.navigatorSocket = wss;
-
-//Utils
-/**
-* Converts the coordinate into coordinateChunk
-*
-* @param {string} coordinate - Coordinate of the characters
-* @returns {string} - Returns the coordinateChunk
-*/
-function convertCoordinateToCoordinateChunk(characterCoordinate) {
-    const coordinate = characterCoordinate.split(',');
-    const chunkSize = 480; //Every tile has 32 size, every chunk has 15 tiles, so  32 * 12 = 480
-    const coordinateY = Math.floor(coordinate[0] / chunkSize);
-    const coordinateX = Math.floor(coordinate[1] / chunkSize);
-
-    return `${coordinateY},${coordinateX}`;
-}
-
-// Retrieve player world tiles every tick
-setInterval(retrievePlayersWorldTiles, serverConfig.navigatorTicks);
-// Retrieve player entitys every tick
-setInterval(retrievePlayersEntitys, serverConfig.navigatorTicks);
-// Update per tick the players position
-setInterval(retrievePlayerPositions, serverConfig.navigatorTicks);

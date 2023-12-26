@@ -97,7 +97,7 @@ http.post('/login', async (req, res) => {
         await user.save();
 
         //Success Login
-        console.log('User Logged: ' + user.username);
+        console.log('\x1b[32m[Administration]\x1b[0m User Logged: ' + user.username);
         return res.json({
             error: false,
             message: 'Success',
@@ -144,7 +144,7 @@ http.post('/loginRemember', async (req, res) => {
         await user.save();
 
         //Success Login
-        console.log('User Logged: ' + user.username);
+        console.log('\x1b[32m[Administration]\x1b[0m User Logged: ' + user.username);
         return res.json({
             error: false,
             message: 'Success',

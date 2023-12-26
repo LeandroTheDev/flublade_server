@@ -61,7 +61,7 @@ function startResponses() {
 
 //Starts the sockets to receive and give players real time informations
 function startSockets() {
-    const { navigatorSocket } = require("./flublade/socket/navigation");
+    const { navigatorSocket } = require("./flublade/socket/navigator/navigation");
     const commands = require("./server/commands");
 }
 

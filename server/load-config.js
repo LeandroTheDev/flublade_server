@@ -21,8 +21,8 @@ const archive = "#Server Configuration\n" +
     "databasePassword=i@Dhs4e5E%fGz&ngbY2m&AGRCVlskBUrrCnsYFUze&fhxehb#j\n" +
     "#Navigation Socket Update every millisecond\n" +
     "navigatorTicks=15\n" +
-    "#Chunk Radius to server load and send the datas, if 0 only loads the chunk that players is in\n" +
-    "chunkRadiusView=3";
+    "#Chunk Radius to server load and send the datas, the minimum is 1\n" +
+    "chunkRadiusView=1";
 
 //Read Config Files
 function readFile() {
