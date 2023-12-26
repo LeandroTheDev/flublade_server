@@ -15,9 +15,9 @@ var ipConnected = {};
 //Navigation Declaration
 /**All Players Online, index by account ID, includes:
 * 
-* coordinateChunk = Actual chunk of the character
+* coordinateChunk = A string of actual chunk of the character
 * 
-* coordinate = Full coordinate of the character position
+* coordinate = A string containing the full coordinate of the character position: "10,24"
 * 
 * selectedCharacterID = Selected character of the account
 * 
@@ -147,14 +147,18 @@ async function receiveDatas(ws, ip, message, id) {
         socket: ws
     }
 
+    //We send the first chunk update for the player
+    retrievePlayersWorldTiles(true);
+
     return selectedCharacter;
 }
 
 /**
-* Called every navigator ticks per seconds
+* Called to send all chunks update for the player
 * this will retrieve every online player the chunks tiles from the world livings
+* @param {boolean} forceReload - Force the chunk loading, used if the player is already in the current chunk
 */
-async function retrievePlayersWorldTiles() {
+async function retrievePlayersWorldTiles(forceReload = false) {
     //Check if exist players
     if (Object.values(playersOnline).length == 0) return;
 
@@ -162,11 +166,13 @@ async function retrievePlayersWorldTiles() {
     for (const userId in playersOnline) {
         //Process the player
         const player = playersOnline[userId];
-
         //Null check
-        if (playersChunkCoordinate[userId] == undefined) playersChunkCoordinate[userId] = {}
+        if (playersChunkCoordinate[userId] == undefined)
+            playersChunkCoordinate[userId] = {
+                coordinateChunk: convertCoordinateToCoordinateChunk(playersOnline[userId]["coordinate"]),
+            }
         //Check if the player needs update from the chunk
-        if (playersChunkCoordinate[userId]["coordinateChunk"] == player["coordinateChunk"]) continue;
+        if (playersChunkCoordinate[userId]["coordinateChunk"] == player["coordinateChunk"] && !forceReload) continue;
         //Add the chunk in playersChunkCoordinate
         playersChunkCoordinate[userId]["coordinateChunk"] = player["coordinateChunk"];
 
@@ -176,8 +182,8 @@ async function retrievePlayersWorldTiles() {
         //Dividing the x and y from the coordinate
         const [playerX, playerY] = player["coordinateChunk"].split(",").map(n => parseInt(n));
         //We need to reduce to calculate the view
-        x = playerX - serverConfig.chunkRadiusView;
-        y = playerY - serverConfig.chunkRadiusView;
+        let x = playerX - serverConfig.chunkRadiusView;
+        let y = playerY - serverConfig.chunkRadiusView;
 
         //Swipe the chunks
         //Explaining the swipe calculation,
@@ -234,9 +240,10 @@ async function retrievePlayersEntitys() {
 */
 async function retrievePlayerPositions() {
     for (const userId in playerCoordinate) {
+        //Null Check
+        if (playersOnline[userId] == undefined) continue;
         //Convert the cordinate into array
         let coordinate = playersOnline[userId]["coordinate"].split(',');
-        console.log(coordinate);
         //Plus the coordinates with the position
         coordinate[0] = parseFloat(coordinate[0]);
         coordinate[1] = parseFloat(coordinate[1]);
@@ -257,7 +264,7 @@ async function retrievePlayerPositions() {
 function updatePlayerDirection(ws, ip, message, id) {
     x = message["direction"][0];
     y = message["direction"][1];
-    playerCoordinate[id] = [x, y];
+    playerCoordinate[id] = [x * 3, y * 3];
 }
 
 //Socket Conenction
@@ -299,6 +306,8 @@ wss.on("connection", async (ws, connectionInfo) => {
         if (playersOnline[id] != undefined) delete playersOnline[id];
         //Check if exist in loaded chunks and remove from loaded chunks
         if (playersChunkCoordinate[id] != undefined) delete playersChunkCoordinate[id];
+        //Check if exist in playerCoordinates and remove from old player coordinate
+        if (playerCoordinate[id] != undefined) delete playerCoordinate[id];
         console.log('\x1b[90m[Navigation]\x1b[0m User Disconnected: ' + username);
     });
 });
@@ -315,7 +324,7 @@ module.exports.navigatorSocket = wss;
 */
 function convertCoordinateToCoordinateChunk(characterCoordinate) {
     const coordinate = characterCoordinate.split(',');
-    const chunkSize = 15;
+    const chunkSize = 480; //Every tile has 32 size, every chunk has 15 tiles, so  32 * 12 = 480
     const coordinateY = Math.floor(coordinate[0] / chunkSize);
     const coordinateX = Math.floor(coordinate[1] / chunkSize);
 

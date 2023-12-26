@@ -11,7 +11,7 @@ httpDDOSLimitUntilTimer=5
 #In milisseconds, the timer until client need to wait after requesting response again
 httpDDOSTimer=5000
 #Database IP for the server connect
-databaseIP=191.201.111.44
+databaseIP=191.201.106.90
 #Database User, the account name to server login into database
 databaseUser=flublade
 #Database Password of the account
