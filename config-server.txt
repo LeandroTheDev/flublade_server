@@ -18,5 +18,7 @@ databaseUser=flublade
 databasePassword=i@Dhs4e5E%fGz&ngbY2m&AGRCVlskBUrrCnsYFUze&fhxehb#j
 #Navigation Socket Update every millisecond
 navigatorTicks=15
+#Manually added
+chunkUnloadTicks=60000
 #Chunk Radius to server load and send the datas, if 0 only loads the chunk that players is in
 chunkRadiusView=1

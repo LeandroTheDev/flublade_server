@@ -6,7 +6,7 @@ const archive = "#Server Configuration\n" +
     "#Game Version, needs to match with client\n" +
     "gameVersion=1.0.0\n" +
     "\n" +
-    "#Connection Configuration" +
+    "#Connection Configuration\n" +
     "#In milisseconds, the timer until client need to wait after connecting again\n" +
     "socketDDOSTimer=1000\n" +
     "#Quantity of times the client can request a response from http server until the timer\n" +
@@ -21,6 +21,8 @@ const archive = "#Server Configuration\n" +
     "databasePassword=i@Dhs4e5E%fGz&ngbY2m&AGRCVlskBUrrCnsYFUze&fhxehb#j\n" +
     "#Navigation Socket Update every millisecond\n" +
     "navigatorTicks=15\n" +
+    "#Chunk unload timer in milisseconds, if the chunk is not see then in milliseconds for chunk reset\n" +
+    "chunkUnloadTicks=60000\n" +
     "#Chunk Radius to server load and send the datas, the minimum is 1\n" +
     "chunkRadiusView=1";
 
@@ -97,6 +99,7 @@ module.exports = function () {
         module.exports.databasePassword = configs.databasePassword;
         module.exports.navigatorTicks = parseInt(configs.navigatorTicks);
         module.exports.chunkRadiusView = parseInt(configs.chunkRadiusView);
+        module.exports.chunkUnloadTicks = parseInt(configs.chunkUnloadTicks);
         console.log('\x1b[32mSuccessfully Loaded Configurations\x1b[0m');
         resolve();
     });

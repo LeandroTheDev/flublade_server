@@ -1,6 +1,7 @@
 //Dependencies
 const config = require("../../http/config");
 const { accountsTable, serverConfig, navigatorTiles } = require("../../../initialize")
+const { calculateCollision, convertTilesToCollisionPositions } = require("./colllision");
 
 //Socket
 const WebSocket = require("ws");
@@ -37,9 +38,9 @@ var playerCoordinate = {};
 * 
 * tiles = List
 *
-* collisionTiles = Map / contains by coordinates all the collision that entity cannot pass throught see tilesCollision in config for details
+* collisionPositions = Map / contains by coordinates all the collision that entity cannot pass throught see tilesCollision in config for details
 *
-* despawnTimeoutID = int / this is the returned id from setTimeout
+* despawnTimeoutID = int / this is the returned id from setTimeout, 0 means that is someone is reendering
 */
 var loadedChunks = {};
 /**Stores all loaded entity in the server by entity GUID
@@ -181,7 +182,7 @@ async function receiveDatas(ws, ip, message, id) {
 /**
 * Send the player all chunks in radius
 * this is generally called when the client ask for update, because
-* a problem occurs
+* a problem occurs, this will not update the chunk just send the data
 */
 async function sendPlayerLocalChunks(ws, ip, message, id) {
     console.log("ID: " + id + " asked for chunk update")
@@ -283,7 +284,7 @@ async function retrievePlayersWorldTiles(forceReload = false) {
                 //Check if chunk exist
                 if (chunk == null) chunks.push(null);
                 //Add the chunk in chunks variable
-                else chunks.push(chunk.dataValues);
+                else { chunks.push(chunk.dataValues); loadChunkInLoadedChunks(chunk.dataValues, x, y); }
                 x++;
             }
             y++;
@@ -333,8 +334,27 @@ async function retrievePlayerPositions() {
         coordinate[1] = parseFloat(coordinate[1]);
         coordinate[0] += playerCoordinate[userId][0];
         coordinate[1] += playerCoordinate[userId][1];
+        //Receive the chunk coordinate
+        let chunkCoordinate = convertCoordinateToCoordinateChunk(coordinate[0] + "," + coordinate[1]);
+        //Receives the loaded chunk that the player is in
+        let loadedChunk = loadedChunks[chunkCoordinate];
+        //Check if the chunk is loaded
+        if (loadedChunk == undefined) continue;
+        //Receives all collision position by the chunk
+        let chunkCollisions = loadedChunks[chunkCoordinate]["collisionPositions"]
+        //Receive the player position after collision calculation
+        let positionCalculation = calculateCollision(
+            //Old Position
+            [coordinate[0] - playerCoordinate[userId][0], coordinate[1] - playerCoordinate[userId][1]],
+            //New Position
+            coordinate,
+            //Player Collision
+            [22,44],
+            //Chunk Collisions
+            chunkCollisions,
+        );
         //Update in cache
-        playersOnline[userId]["coordinate"] = coordinate[0] + "," + coordinate[1];
+        playersOnline[userId]["coordinate"] = positionCalculation[0] + "," + positionCalculation[1];
         //Update the chunk
         playersOnline[userId]["coordinateChunk"] = convertCoordinateToCoordinateChunk(playersOnline[userId]["coordinate"]);
         delete playerCoordinate[userId];
@@ -348,17 +368,20 @@ async function retrievePlayerPositions() {
 function updatePlayerDirection(ws, ip, message, id) {
     x = message["direction"][0];
     y = message["direction"][1];
-    playerCoordinate[id] = [x * 3, y * 3];
+    //Check if player is stopped
+    if (x == 0 && y == 0) return;
+    //Update the player for the next tick
+    playerCoordinate[id] = [x * 10, y * 10];
 }
 
 //
 //UTILS
 //
 /**
-* Converts the coordinate into coordinateChunk
+* Converts the coordinate into coordinateChunk, needs to be a string with comma ex: "100,100"
 *
 * @param {string} coordinate - Coordinate of the characters
-* @returns {string} - Returns the coordinateChunk
+* @returns {string} - Returns a string of the coordinateChunk
 */
 function convertCoordinateToCoordinateChunk(characterCoordinate) {
     const coordinate = characterCoordinate.split(',');
@@ -367,6 +390,26 @@ function convertCoordinateToCoordinateChunk(characterCoordinate) {
     const coordinateX = Math.floor(coordinate[1] / chunkSize);
 
     return `${coordinateY},${coordinateX}`;
+}
+/**
+* Load the chunk to loadedChunks
+*
+* @param {Array} tiles - Tiles of the chunk
+* @param {number} x - X position of the chunk
+* @param {number} y - Y position of the chunk
+*/
+function loadChunkInLoadedChunks(chunk, x, y) {
+    //We check if chunk is already loaded
+    if (loadedChunks[x + "," + y] != undefined) return;
+
+    //Parse the tiles
+    let tiles = JSON.parse(chunk["tiles"])
+    loadedChunks[x + "," + y] = {
+        tiles: tiles,
+        collisionPositions: convertTilesToCollisionPositions(tiles, x, y),
+        despawnTimeoutID: 0 //0 means that the chunk is been rendering by someone
+    }
+    // setTimeout(() => delete loadedChunks[x + "," + y], serverConfig.chunkUnloadTicks)
 }
 
 //

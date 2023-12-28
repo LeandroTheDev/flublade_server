@@ -1,20 +1,13 @@
 # Flublade Server
 
-Flublade is a MMORPG Sandbox, this project is a full featured http and websockets server to work together with flublade.
+Flublade server for the flublade game, this project is a full featured http and websockets server to work together with flublade.
 
-Basic features:
-- Password encryption.
-- Login system.
-- Token Validation.
-- Real time players moviment.
-- Real time enemy moviment.
-- Battles
+The servers provides a simple DDOS Protection for the http server, simple block the ip and subsequent ips trying to down the server, also
+the server have a ddos protection for multiple handshake for websockets connections
 
-The servers will work together with flublade but if exists inconsistencies with the client and server the client will lost connection, causing the client returning to authetication page, and then servers will reset their token.
+Everthing in the server is configurable, you can change this in config-server.txt, if not exist launch the server for the first time.
 
-DDOS Protection, the server have a simple http ddos protection, simple block the ip and subsequent ips trying to down the server.
-
-Anti cheat, in most cases the server process all datas to prevent user data manipulation, the server have some verification to prevent user to manipulate important mechanics in the game, like colission, not too complex to destroy server performance.
+Is very important to change the configurations for the type of the server you want.
 
 # Configuring own server
 
@@ -23,13 +16,9 @@ Anti cheat, in most cases the server process all datas to prevent user data mani
 - After that you need to create a user for that database, opens you database terminal and create a user with all privileges,
 > GRANT ALL PRIVILEGES ON flublade.* TO 'flubladeAdmin'@'%' IDENTIFIED BY 'yourpassword' WITH GRANT OPTION;
 > > Obs: if you want to change for only specific ip address, change the "%" for "your.ip.address", this is the ip of server to be able to connect.
-- Download the server files, and then edit db.js and changes the ip address located in line 6, and if you are not using mariadb database change for the respective database
+- Change the user and password of database in config-server.txt
+- You can download a database template for the server to provide a simple world for the game: [template](https://github.com/LeandroTheDev/flublade_backend/not_implemented) (not implemented yet)
 
-
-![image](https://user-images.githubusercontent.com/106118473/236651857-845ca8e6-0471-44cb-99bb-8c65a84d4fd6.png)
-
-
-- Also change the gameplay/config.js to configure the server the way you prefer
 - After that the server needs the dependencies, download the [dependencies](https://github.com/LeandroTheDev/flublade_backend/tree/main#dependencies) with "npm install name"
 - And then the server is ready
 - Write in terminal "node initialize.js" to start server
