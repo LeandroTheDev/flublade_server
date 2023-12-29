@@ -8,30 +8,95 @@ const { tilesCollision, entityCollision } = require("./config");
 *
 * @param {Array} entityPositionOld - [0]: X [1]: Y
 * @param {Array} entityPositionNew - [0]: X [1]: Y
-* @param {Dynamic} entityCollisionCorner - Based in collision type
+* @param {Dynamic} entityCollisionCorner - [22,44]
 * @param {Map} collisionPositions - ["0,0"]: {config}
 * @returns {Array} - Returns a array contains 2 positions [0]: X [1]: Y
 */
-function calculateCollision(entityPositionOld, entityPositionNew, entityCollisionCorner, collisionPositions) {
-    let newX = parseInt(entityPositionNew[0]);
-    let newY = parseInt(entityPositionNew[1]);
-    let tilePosition = findTilePositionByCoordinate(newX, newY);
-    console.log(tilePosition);
-    //We check if exist a collision]
-    if (collisionPositions[tilePosition] != undefined) {
-        //We check the player navigatorStatus
-        for (let i = 0; i < collisionPositions[tilePosition]["collisionBypass"].length; i++) {
-            //Checking if the player has bypass status equals the tile
-            if ("" == collisionPositions[tilePosition]["collisionBypass"][i]) {
-                return entityPositionNew;
+function calculateTileCollisionForEntity(entityPositionOld, entityPositionNew, entityCollisionCorner, collisionPositions) {
+    //With all collided tiles calculate the next entity position
+    function calculateCollision(collidedTiles) {
+        const [playerX, playerY] = findTilePositionByCoordinate(entityPositionOld[0], entityPositionOld[1]).split(",").map(n => parseInt(n));
+        let entityPosition = entityPositionNew;
+        //Positions declarations
+        for (const tile in collidedTiles) {
+            const [tileX, tileY] = tile.split(",").map(n => parseInt(n));
+            //We check the entity navigatorStatus for collision bypass
+            for (let i = 0; i < collisionPositions[tile]["collisionBypass"].length; i++) {
+                //Checking if the player has bypass status equals the tile
+                if ("" == collisionPositions[tile]["collisionBypass"][i]) {
+                    return entityPositionNew;
+                }
             }
+            // console.log("Old: " + entityPositionOld + " New: " + entityPositionNew)
+            let direction = "none";
+            if (entityPositionOld[0] < entityPositionNew[0]) direction = "left";
+            else direction = "right"
+            if (entityPositionOld[1] < entityPositionNew[1]) direction += "down";
+            else direction += "up";
+            let tileSize = collisionPositions[tile]["collisionSize"];
+            //In the code above i will make a x,y correction based in entity collision corner to pickup
+            //the real coordenates of the character without collision
+            //then i will find the multiples of tile size to find the exact position for the
+            //entity to stay
+            //
+            //Correction variables for calculation
+            let xCorrectionLeft = entityPositionOld[0] - entityCollisionCorner[0] / 2
+            let xCorrectionRight = entityPositionOld[0] + entityCollisionCorner[0] / 2
+            let yCorrectionUp = entityPositionOld[1] - entityCollisionCorner[1] / 2
+            let yCorrectionDown = entityPositionOld[1] + entityCollisionCorner[1] / 2
+            //Check if direction is right
+            if (direction == "right" || direction == "rightup" || direction == "rightdown") {
+                //Check new Chunk collision             Check if the collision is on the right
+                if (!(playerX === 15 && tileX === 0) && tileX < playerX)
+                    entityPosition[0] = Math.floor(xCorrectionLeft / tileSize) * tileSize + (entityCollisionCorner[0] / 2) + 1;
+                //Stop if collision is in new chunk
+                else if (tileX == 15)
+                    entityPosition[0] = Math.ceil(xCorrectionLeft / tileSize) * tileSize + (entityCollisionCorner[0] / 2) + 1;
+            }
+            //Check if direction is left
+            if (direction == "left" || direction == "leftup" || direction == "leftdown") {
+                //Check new Chunk collision             Check if the collision is on the left
+                if (!(playerX === 0 && tileX === 15) && tileX > playerX)
+                    entityPosition[0] = (Math.floor((xCorrectionRight + tileSize - 1) / tileSize) * tileSize) - (entityCollisionCorner[0] / 2) - 1;
+                //Stop if collision is in new chunk
+                else if (tileX == 0)
+                    entityPosition[0] = (Math.ceil(xCorrectionRight / tileSize) * tileSize) - (entityCollisionCorner[0] / 2) - 1;
+            }
+            //Check if direction is up
+            if (direction == "up" || direction == "rightup" || direction == "leftup") {
+                if (tileY < playerY)
+                    entityPosition[1] = (Math.floor((yCorrectionUp + tileSize - 1) / tileSize) * tileSize) + (entityCollisionCorner[1] / 2) - 1;
+            }
+            // console.log("TileX: " + tileX + " TileY: " + tileY + " PlayerX: " + playerX + " PlayerY: " + playerY);
         }
-        //Going here means that are not bypass we need limit the player position
-        //The player body will have 22x44 collision
-        return entityPositionOld; //Simple block the pass we need to make a better collision in future
+        return entityPosition;
     }
-    //No collision
-    else return entityPositionNew;
+    ///Stores already loaded tiles without collision
+    let nonCollisionTiles = {}; //Performance variable
+    let newX = parseInt(entityPositionNew[0]); //Calculation
+    let newY = parseInt(entityPositionNew[1]); //Calculation
+    let collidedTiles = {};
+    //Swiping the Y collision coordinates
+    //We are dividing by 2 to center the calculation on the target
+    for (let entityCollisionY = 0 - entityCollisionCorner[1] / 2; entityCollisionY < entityCollisionCorner[1] / 2; entityCollisionY++) {
+        for (let entityCollisionX = 0 - entityCollisionCorner[0] / 2; entityCollisionX < entityCollisionCorner[0] - entityCollisionCorner[0] / 2; entityCollisionX++) {
+            let positionCollidedX = newX + entityCollisionX
+            let positionCollidedY = newY + entityCollisionY
+            //Pickup the tile position of current collision
+            let tilePosition = findTilePositionByCoordinate(positionCollidedX, positionCollidedY);
+
+            //Performance check
+            if (nonCollisionTiles[tilePosition] == undefined)
+                //Check if exist a collision if not then add to performance variable
+                if (collisionPositions[tilePosition] == undefined)
+                    nonCollisionTiles[tilePosition];
+                //Calculate
+                else collidedTiles[tilePosition] = collisionPositions[tilePosition];
+            //Calculate
+            else collidedTiles[tilePosition] = collisionPositions[tilePosition];
+        }
+    }
+    return calculateCollision(collidedTiles);
 }
 
 /**
@@ -41,11 +106,9 @@ function calculateCollision(entityPositionOld, entityPositionNew, entityCollisio
 *use with caution
 *
 * @param {Array} tiles - Tiles of the chunk
-* @param {number} x - X position of the chunk
-* @param {number} y - Y position of the chunk
-* @returns {Map} - Returns a giant map containing all coordinates with collision
+* @returns {Map} - Returns a map containing all tiles that have collisions
 */
-function convertTilesToCollisionPositions(tiles, x, y) {
+function convertTilesToCollisionPositions(tiles) {
     let collisionPositions = {};
     //Swipe all tiles in the chunk
     for (let i = 0; i < tiles.length; i++) { //Y Position
@@ -65,14 +128,14 @@ function convertTilesToCollisionPositions(tiles, x, y) {
     return collisionPositions;
 }
 
-module.exports.calculateCollision = calculateCollision;
+module.exports.calculateTileCollisionForEntity = calculateTileCollisionForEntity;
 module.exports.convertTilesToCollisionPositions = convertTilesToCollisionPositions;
 
 //
 //UTILS
 //
 /**
-* Converts the coordinateChunk into startCoordinateChunk the first position of the chunk
+* Converts the coordinate to tile position of the chunk
 *
 * @param {number} x - X position of the chunk
 * @param {number} y - Y position of the chunk
@@ -84,16 +147,16 @@ function findTilePositionByCoordinate(x, y) {
     let yChunk = y % 480;
     //Converting chunk position to tile
     let xTilePosition = 0;
-    while(true) {
-        if(xChunk > 31) {
+    while (true) {
+        if (xChunk > 31) {
             xChunk -= 31;
             xTilePosition++;
         }
         else break;
     }
     let yTilePosition = 0;
-    while(true) {
-        if(yChunk > 31) {
+    while (true) {
+        if (yChunk > 31) {
             yChunk -= 31;
             yTilePosition++;
         }

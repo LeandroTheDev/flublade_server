@@ -1,7 +1,7 @@
 //Dependencies
 const config = require("../../http/config");
 const { accountsTable, serverConfig, navigatorTiles } = require("../../../initialize")
-const { calculateCollision, convertTilesToCollisionPositions } = require("./colllision");
+const { calculateTileCollisionForEntity, convertTilesToCollisionPositions } = require("./colllision");
 
 //Socket
 const WebSocket = require("ws");
@@ -343,7 +343,7 @@ async function retrievePlayerPositions() {
         //Receives all collision position by the chunk
         let chunkCollisions = loadedChunks[chunkCoordinate]["collisionPositions"]
         //Receive the player position after collision calculation
-        let positionCalculation = calculateCollision(
+        let positionCalculation = calculateTileCollisionForEntity(
             //Old Position
             [coordinate[0] - playerCoordinate[userId][0], coordinate[1] - playerCoordinate[userId][1]],
             //New Position
@@ -406,7 +406,7 @@ function loadChunkInLoadedChunks(chunk, x, y) {
     let tiles = JSON.parse(chunk["tiles"])
     loadedChunks[x + "," + y] = {
         tiles: tiles,
-        collisionPositions: convertTilesToCollisionPositions(tiles, x, y),
+        collisionPositions: convertTilesToCollisionPositions(tiles),
         despawnTimeoutID: 0 //0 means that the chunk is been rendering by someone
     }
     // setTimeout(() => delete loadedChunks[x + "," + y], serverConfig.chunkUnloadTicks)
