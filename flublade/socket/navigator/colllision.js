@@ -13,10 +13,68 @@ const { tilesCollision, entityCollision } = require("./config");
 * @returns {Array} - Returns a array contains 2 positions [0]: X [1]: Y
 */
 function calculateTileCollisionForEntity(entityPositionOld, entityPositionNew, entityCollisionCorner, collisionPositions) {
+    function checkCollisionsAndReturnTheDirectionsPossibilities(xSize, ySize, entityTilesDirections) {
+        //left,right,up,down
+        let possibleDirections = [false, false, false, false];
+        //Variables that will say if can pass or not
+        let movingLeft = "yes";
+        let movingRight = "yes";
+        let movingUp = "yes";
+        let movingDown = "yes";
+        //Calculate entity direciton moviment possibility by the tiles and using the size to
+        //calculate possibilities
+        function checkSizeAndTilesAndReturnDirectionPossibility(tileX, tileY) {
+            if (xSize == 1 && ySize == 2) {
+                //X: 1 and Y:2 means that
+                //from Y only touch 2 tiles at same time
+                //fom X only touch 3 tiles at same time
+                //lets make the formula
+                // console.log("tileX: " + tileX + " tileY" + tileY);
+                //Up formula
+                if (tileY == -1 && tileX == -1) { if (movingUp == "maybe" || movingUp == "no") movingUp = "no"; else movingUp = "maybe"; }
+                if (tileY == -1 && tileX == 0) movingUp = "no";
+                if (tileY == -1 && tileX == 1) { if (movingUp == "maybe" || movingUp == "no") movingUp = "no"; else movingUp = "maybe"; }
+
+                //Left formula
+                if (tileX == -1 && tileY == -1) { if (movingLeft == "maybe" || movingLeft == "no") movingLeft = "no"; else movingLeft = "maybe"; }
+                if (tileX == -1 && tileY == 0) movingLeft = "no";
+                if (tileX == -1 && tileY == 1) { if (movingLeft == "maybe" || movingLeft == "no") movingLeft = "no"; else movingLeft = "maybe"; }
+
+                //Right formula
+                if (tileX == 1 && tileY == -1) { if (movingRight == "maybe" || movingRight == "no") movingRight = "no"; else movingRight = "maybe"; }
+                if (tileX == 1 && tileY == 0) movingRight = "no";
+                if (tileX == 1 && tileY == 1) { if (movingRight == "maybe" || movingRight == "no") movingRight = "no"; else movingRight = "maybe"; }
+
+                //Down formula
+                if (tileY == 1 && tileX == -1) { if (movingDown == "maybe" || movingDown == "no") movingDown = "no"; else movingDown = "maybe"; }
+                if (tileY == 1 && tileX == 0) movingDown = "no"
+                if (tileY == 1 && tileX == 1) { if (movingDown == "maybe" || movingDown == "no") movingDown = "no"; else movingDown = "maybe"; }
+            }
+        }
+        for (let direction in entityTilesDirections) {
+            // Divide a string em coordenadas x e y
+            let [x, y] = direction.split(',').map(Number);
+            checkSizeAndTilesAndReturnDirectionPossibility(x, y);
+        }
+        possibleDirections[0] = movingLeft == "maybe" || movingLeft == "yes";
+        possibleDirections[1] = movingRight == "maybe" || movingRight == "yes";
+        possibleDirections[2] = movingUp == "maybe" || movingUp == "yes";
+        possibleDirections[3] = movingDown == "maybe" || movingDown == "yes";
+        // console.log("left: " + movingLeft + " right: " + movingRight + " up: " + movingUp + " down: " + movingDown);
+        return possibleDirections;
+    }
     //With all collided tiles calculate the next entity position
     function calculateCollision(collidedTiles) {
         const [playerX, playerY] = findTilePositionByCoordinate(entityPositionOld[0], entityPositionOld[1]).split(",").map(n => parseInt(n));
+        //Entity actual position
         let entityPosition = entityPositionNew;
+        //Entity Tiles Directions Collided, used for directions possibilities
+        let entityTilesDirections = {};
+        //Moviment variables for entity, if null means no moviment
+        let entityMovimentToLeft = null;
+        let entityMovimentToRight = null;
+        let entityMovimentToUp = null;
+        let entityMovimentToDown = null;
         //Positions declarations
         for (const tile in collidedTiles) {
             const [tileX, tileY] = tile.split(",").map(n => parseInt(n));
@@ -27,64 +85,85 @@ function calculateTileCollisionForEntity(entityPositionOld, entityPositionNew, e
                     return entityPositionNew;
                 }
             }
-            // console.log("Old: " + entityPositionOld + " New: " + entityPositionNew)
+            //Translate direction
             let direction = "none";
-            if (entityPositionOld[0] < entityPositionNew[0]) direction = "left";
-            else direction = "right"
+            if (entityPositionOld[0] < entityPositionNew[0]) direction = "right";
+            else direction = "left"
             if (entityPositionOld[1] < entityPositionNew[1]) direction += "down";
             else direction += "up";
             let tileSize = collisionPositions[tile]["collisionSize"];
             //In the code above i will make a x,y correction based in entity collision corner to pickup
-            //the real coordenates of the character without collision
-            //then i will find the multiples of tile size to find the exact position for the
-            //entity to stay
-            //
-            //Correction variables for calculation
+            //the real coordenates of the entity without collision
             let xCorrectionLeft = entityPositionOld[0] - entityCollisionCorner[0] / 2
             let xCorrectionRight = entityPositionOld[0] + entityCollisionCorner[0] / 2
             let yCorrectionUp = entityPositionOld[1] - entityCollisionCorner[1] / 2
             let yCorrectionDown = entityPositionOld[1] + entityCollisionCorner[1] / 2
+
+            //The collision works like real life atoms that never touch each others and cannot occupy the same pixel
+            //if a entity is occuping the same pixel they will freeze and cause a collapse in time space
+
+            //Differences calculates the exact position of tile collision
+            let xDifference = tileX - playerX;
+            let yDifference = tileY - playerY;
+            entityTilesDirections[xDifference + "," + yDifference] = true;
             //Check if direction is right
             if (direction == "right" || direction == "rightup" || direction == "rightdown") {
-                //Check new Chunk collision             Check if the collision is on the right
-                if (!(playerX === 15 && tileX === 0) && tileX < playerX)
-                    entityPosition[0] = Math.floor(xCorrectionLeft / tileSize) * tileSize + (entityCollisionCorner[0] / 2) + 1;
-                //Stop if collision is in new chunk
-                else if (tileX == 15)
-                    entityPosition[0] = Math.ceil(xCorrectionLeft / tileSize) * tileSize + (entityCollisionCorner[0] / 2) + 1;
+                //The max that the entity can go
+                let xMax = Math.round(xCorrectionRight / tileSize) * tileSize;
+                //Add a limiar to not stay in the pure tile
+                xMax -= 1.00;
+                entityMovimentToRight = xMax - entityCollisionCorner[0] / 2;
             }
             //Check if direction is left
             if (direction == "left" || direction == "leftup" || direction == "leftdown") {
-                //Check new Chunk collision             Check if the collision is on the left
-                if (!(playerX === 0 && tileX === 15) && tileX > playerX)
-                    entityPosition[0] = (Math.floor((xCorrectionRight + tileSize - 1) / tileSize) * tileSize) - (entityCollisionCorner[0] / 2) - 1;
-                //Stop if collision is in new chunk
-                else if (tileX == 0)
-                    entityPosition[0] = (Math.ceil(xCorrectionRight / tileSize) * tileSize) - (entityCollisionCorner[0] / 2) - 1;
+                //The max that the entity can go
+                let xMax = Math.round(xCorrectionLeft / tileSize) * tileSize;
+                //Add a limiar to not stay in the pure tile
+                xMax += 1.00;
+                entityMovimentToLeft = xMax + entityCollisionCorner[0] / 2;
             }
             //Check if direction is up
             if (direction == "up" || direction == "rightup" || direction == "leftup") {
-                if (tileY < playerY)
-                    entityPosition[1] = (Math.floor((yCorrectionUp + tileSize - 1) / tileSize) * tileSize) + (entityCollisionCorner[1] / 2) - 1;
+                //The max that the entity can go
+                let yMax = Math.round(yCorrectionUp / tileSize) * tileSize;
+                //Add a limiar to not stay in the pure tile
+                yMax += 1.00;
+                entityMovimentToUp = yMax + entityCollisionCorner[1] / 2;
             }
-            // console.log("TileX: " + tileX + " TileY: " + tileY + " PlayerX: " + playerX + " PlayerY: " + playerY);
+            //Check if direction is up
+            if (direction == "down" || direction == "rightdown" || direction == "leftdown") {
+                //The max that the entity can go
+                let yMax = Math.round(yCorrectionDown / tileSize) * tileSize;
+                //Add a limiar to not stay in the pure tile
+                yMax -= 1.00;
+                entityMovimentToDown = yMax - entityCollisionCorner[1] / 2;
+            }
         }
+        //This is for calculation of directions possibilities
+        //if a entity is size of 1 means that he can only collide with
+        //2 Y tiles at same time, if the size is 2 y tiles he can collide 3 Y tiles at same time
+        let entityXSizeTile = Math.ceil(entityCollisionCorner[0] / 32);
+        let entityYSizeTile = Math.ceil(entityCollisionCorner[1] / 32);
+        let directionsPossibilites = checkCollisionsAndReturnTheDirectionsPossibilities(entityXSizeTile, entityYSizeTile, entityTilesDirections);
+        //Change entity positions
+        if (entityMovimentToLeft != null && !directionsPossibilites[0]) entityPosition[0] = entityMovimentToLeft;
+        if (entityMovimentToRight != null && !directionsPossibilites[1]) entityPosition[0] = entityMovimentToRight;
+        if (entityMovimentToUp != null && !directionsPossibilites[2]) entityPosition[1] = entityMovimentToUp;
+        if (entityMovimentToDown != null && !directionsPossibilites[3]) entityPosition[1] = entityMovimentToDown;
         return entityPosition;
     }
     ///Stores already loaded tiles without collision
     let nonCollisionTiles = {}; //Performance variable
-    let newX = parseInt(entityPositionNew[0]); //Calculation
-    let newY = parseInt(entityPositionNew[1]); //Calculation
+    let newX = parseInt(entityPositionNew[0]); //Entity actual X position
+    let newY = parseInt(entityPositionNew[1]); //Entity actual Y position
     let collidedTiles = {};
-    //Swiping the Y collision coordinates
-    //We are dividing by 2 to center the calculation on the target
-    for (let entityCollisionY = 0 - entityCollisionCorner[1] / 2; entityCollisionY < entityCollisionCorner[1] / 2; entityCollisionY++) {
-        for (let entityCollisionX = 0 - entityCollisionCorner[0] / 2; entityCollisionX < entityCollisionCorner[0] - entityCollisionCorner[0] / 2; entityCollisionX++) {
-            let positionCollidedX = newX + entityCollisionX
-            let positionCollidedY = newY + entityCollisionY
-            //Pickup the tile position of current collision
-            let tilePosition = findTilePositionByCoordinate(positionCollidedX, positionCollidedY);
 
+    //In this for xCollision and yCollision is based in entity position,
+    //so will need to check if the entity position has a collision, with the entityCollisionCorner variable,
+    //we will check all sides pixel by pixel, and check if that pixel the tile has a collision
+    for (let yCollision = newY - entityCollisionCorner[1] / 2; yCollision < newY + entityCollisionCorner[1] / 2; yCollision++) {
+        for (let xCollision = newX - entityCollisionCorner[0] / 2; xCollision < newX + entityCollisionCorner[0] / 2; xCollision++) {
+            let tilePosition = findTilePositionByCoordinate(xCollision, yCollision);
             //Performance check
             if (nonCollisionTiles[tilePosition] == undefined)
                 //Check if exist a collision if not then add to performance variable
@@ -96,6 +175,7 @@ function calculateTileCollisionForEntity(entityPositionOld, entityPositionNew, e
             else collidedTiles[tilePosition] = collisionPositions[tilePosition];
         }
     }
+    // console.log(entityPositionOld);
     return calculateCollision(collidedTiles);
 }
 
@@ -142,25 +222,19 @@ module.exports.convertTilesToCollisionPositions = convertTilesToCollisionPositio
 * @returns {string} - Example return: "8,15"
 */
 function findTilePositionByCoordinate(x, y) {
-    //Converting coordinate to chunk position
-    let xChunk = x % 480;
-    let yChunk = y % 480;
-    //Converting chunk position to tile
     let xTilePosition = 0;
-    while (true) {
-        if (xChunk > 31) {
-            xChunk -= 31;
-            xTilePosition++;
-        }
-        else break;
-    }
     let yTilePosition = 0;
     while (true) {
-        if (yChunk > 31) {
-            yChunk -= 31;
-            yTilePosition++;
-        }
-        else break;
+        if (x > 32) {
+            x -= 32;
+            xTilePosition += 1;
+        } else break;
+    }
+    while (true) {
+        if (y > 32) {
+            y -= 32;
+            yTilePosition += 1;
+        } else break;
     }
     return xTilePosition + "," + yTilePosition;
 }
