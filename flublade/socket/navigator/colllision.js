@@ -1,6 +1,6 @@
 const { tilesCollision, entityCollision } = require("./config");
 /**
-*Calculate the colision position by the player position and collisionPositions
+*Calculate the colision position by the entity position and collisionPositions
 *this checks if the new player position is a valid position without a collision,
 *ignored if the player has a navigatorStatus that bypass the collision, if everthing
 *is ok then return the new playerPosition, if not returns the best position without
@@ -13,6 +13,7 @@ const { tilesCollision, entityCollision } = require("./config");
 * @returns {Array} - Returns a array contains 2 positions [0]: X [1]: Y
 */
 function calculateTileCollisionForEntity(entityPositionOld, entityPositionNew, entityCollisionCorner, collisionPositions) {
+    //Based in entity size and tiles directions calculates the directions of the entity can go
     function checkCollisionsAndReturnTheDirectionsPossibilities(xSize, ySize, entityTilesDirections) {
         //left,right,up,down
         let possibleDirections = [false, false, false, false];
@@ -64,7 +65,8 @@ function calculateTileCollisionForEntity(entityPositionOld, entityPositionNew, e
         return possibleDirections;
     }
     //With all collided tiles calculate the next entity position
-    function calculateCollision(collidedTiles) {
+    function calculateEntityPositionByCollidedTiles(collidedTiles) {
+        console.log(collidedTiles); //Debuging
         const [playerX, playerY] = findTilePositionByCoordinate(entityPositionOld[0], entityPositionOld[1]).split(",").map(n => parseInt(n));
         //Entity actual position
         let entityPosition = entityPositionNew;
@@ -152,6 +154,7 @@ function calculateTileCollisionForEntity(entityPositionOld, entityPositionNew, e
         if (entityMovimentToDown != null && !directionsPossibilites[3]) entityPosition[1] = entityMovimentToDown;
         return entityPosition;
     }
+
     ///Stores already loaded tiles without collision
     let nonCollisionTiles = {}; //Performance variable
     let newX = parseInt(entityPositionNew[0]); //Entity actual X position
@@ -175,8 +178,9 @@ function calculateTileCollisionForEntity(entityPositionOld, entityPositionNew, e
             else collidedTiles[tilePosition] = collisionPositions[tilePosition];
         }
     }
+
     // console.log(entityPositionOld);
-    return calculateCollision(collidedTiles);
+    return calculateEntityPositionByCollidedTiles(collidedTiles);
 }
 
 /**
@@ -196,15 +200,16 @@ function convertTilesToCollisionPositions(tiles) {
         let rowTiles = tiles[i];
         //Swipe all tiles of the row
         for (let j = 0; j < rowTiles.length; j++) { //X Position
-            //Checking if exist a collision in that tile
-            if (tilesCollision[rowTiles[j]]["collisionType"] == undefined) continue;
             //Square Type collision
-            if (tilesCollision[rowTiles[j]]["collisionType"] == "Square") {
+            if (tilesCollision[rowTiles[j]]["collisionType"] != undefined) {
+                // Collision positions debug
+                // debug += "|" + j + "," + i + "|";
                 //Adding the tile collision
                 collisionPositions[j + "," + i] = tilesCollision[rowTiles[j]]
             }
         }
     }
+    // console.log(collisionPositions);
     return collisionPositions;
 }
 
@@ -214,6 +219,7 @@ module.exports.convertTilesToCollisionPositions = convertTilesToCollisionPositio
 //
 //UTILS
 //
+
 /**
 * Converts the coordinate to tile position of the chunk
 *

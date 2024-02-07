@@ -394,7 +394,7 @@ function convertCoordinateToCoordinateChunk(characterCoordinate) {
 /**
 * Load the chunk to loadedChunks
 *
-* @param {Array} tiles - Tiles of the chunk
+* @param {Map} chunk - Chunk data
 * @param {number} x - X position of the chunk
 * @param {number} y - Y position of the chunk
 */
