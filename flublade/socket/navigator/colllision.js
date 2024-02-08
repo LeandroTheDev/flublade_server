@@ -66,20 +66,22 @@ function calculateTileCollisionForEntity(entityPositionOld, entityPositionNew, e
     }
     //With all collided tiles calculate the next entity position
     function calculateEntityPositionByCollidedTiles(collidedTiles) {
-        console.log(collidedTiles); //Debuging
-        const [playerX, playerY] = findTilePositionByCoordinate(entityPositionOld[0], entityPositionOld[1]).split(",").map(n => parseInt(n));
+        //Get player tiles position chunk
+        let [playerX, playerY] = findTilePositionByCoordinate(entityPositionOld[0], entityPositionOld[1]).split(",").map(n => parseInt(n));
+        [playerX, playerY] = findTilePositionChunkByTileCoordinate(playerX, playerY).split(",").map(n => parseInt(n));
         //Entity actual position
         let entityPosition = entityPositionNew;
         //Entity Tiles Directions Collided, used for directions possibilities
         let entityTilesDirections = {};
         //Moviment variables for entity, if null means no moviment
-        let entityMovimentToLeft = null;
-        let entityMovimentToRight = null;
-        let entityMovimentToUp = null;
-        let entityMovimentToDown = null;
+        let entityMovimentToLeft;
+        let entityMovimentToRight;
+        let entityMovimentToUp;
+        let entityMovimentToDown;
         //Positions declarations
         for (const tile in collidedTiles) {
-            const [tileX, tileY] = tile.split(",").map(n => parseInt(n));
+            //Get tiles position chunk
+            let [tileX, tileY] = tile.split(",").map(n => parseInt(n));
             //We check the entity navigatorStatus for collision bypass
             for (let i = 0; i < collisionPositions[tile]["collisionBypass"].length; i++) {
                 //Checking if the player has bypass status equals the tile
@@ -160,20 +162,23 @@ function calculateTileCollisionForEntity(entityPositionOld, entityPositionNew, e
     let newX = parseInt(entityPositionNew[0]); //Entity actual X position
     let newY = parseInt(entityPositionNew[1]); //Entity actual Y position
     let collidedTiles = {};
+    let entityPositionOldChunk = findEntityChunkPositionByEntityPosition(entityPositionOld[0], entityPositionOld[1]); //Entity chunk position old
+    let entityPositionNewChunk = findEntityChunkPositionByEntityPosition(newX, newY); //Entity chunk position new
 
     //In this for xCollision and yCollision is based in entity position,
     //so will need to check if the entity position has a collision, with the entityCollisionCorner variable,
-    //we will check all sides pixel by pixel, and check if that pixel the tile has a collision
-    for (let yCollision = newY - entityCollisionCorner[1] / 2; yCollision < newY + entityCollisionCorner[1] / 2; yCollision++) {
-        for (let xCollision = newX - entityCollisionCorner[0] / 2; xCollision < newX + entityCollisionCorner[0] / 2; xCollision++) {
+    //we will check all sides pixel by pixel, and check if that pixel the tile has a collision    
+    for (let yCollision = entityPositionNewChunk[1] - entityCollisionCorner[1] / 2; yCollision < entityPositionNewChunk[1] + entityCollisionCorner[1] / 2; yCollision++) {
+        for (let xCollision = entityPositionNewChunk[0] - entityCollisionCorner[0] / 2; xCollision < entityPositionNewChunk[0] + entityCollisionCorner[0] / 2; xCollision++) {
+            //Getting tile coordinate
             let tilePosition = findTilePositionByCoordinate(xCollision, yCollision);
             //Performance check
             if (nonCollisionTiles[tilePosition] == undefined)
                 //Check if exist a collision if not then add to performance variable
-                if (collisionPositions[tilePosition] == undefined)
-                    nonCollisionTiles[tilePosition];
+                if (collisionPositions[tilePosition] == undefined) nonCollisionTiles[tilePosition];
                 //Calculate
                 else collidedTiles[tilePosition] = collisionPositions[tilePosition];
+
             //Calculate
             else collidedTiles[tilePosition] = collisionPositions[tilePosition];
         }
@@ -221,7 +226,29 @@ module.exports.convertTilesToCollisionPositions = convertTilesToCollisionPositio
 //
 
 /**
-* Converts the coordinate to tile position of the chunk
+* Converts entity position to entity chunk position
+*
+* @param {number} x - X position of the chunk
+* @param {number} y - Y position of the chunk
+* @returns {Array} - Example return: [8,15]
+*/
+function findEntityChunkPositionByEntityPosition(x, y) {
+    //Get World Tile position X
+    while (true) {
+        if (x >= 480) {
+            x -= 480;
+        } else break;
+    }
+    //Get World Tile position Y
+    while (true) {
+        if (y >= 480) {
+            y -= 480;
+        } else break;
+    }
+    return [x, y];
+}
+/**
+* Converts the coordinate to tile coordinate
 *
 * @param {number} x - X position of the chunk
 * @param {number} y - Y position of the chunk
@@ -230,12 +257,14 @@ module.exports.convertTilesToCollisionPositions = convertTilesToCollisionPositio
 function findTilePositionByCoordinate(x, y) {
     let xTilePosition = 0;
     let yTilePosition = 0;
+    //Get World Tile position X
     while (true) {
         if (x > 32) {
             x -= 32;
             xTilePosition += 1;
         } else break;
     }
+    //Get World Tile position Y
     while (true) {
         if (y > 32) {
             y -= 32;
@@ -244,6 +273,29 @@ function findTilePositionByCoordinate(x, y) {
     }
     return xTilePosition + "," + yTilePosition;
 }
+/**
+* Converts the tile coordinate to tile position of the chunk
+*
+* @param {number} x - X position of the tile
+* @param {number} y - Y position of the tile
+* @returns {string} - Example return: "8,15"
+*/
+function findTilePositionChunkByTileCoordinate(x, y) {
+    //Get Chunk Tile position X
+    while (true) {
+        if (x >= 15) {
+            x -= 15;
+        } else break;
+    }
+    //Get Chunk Tile position Y
+    while (true) {
+        if (y >= 15) {
+            y -= 15;
+        } else break;
+    }
+    return x + "," + y;
+}
+
 /**
 * Converts the coordinateChunk into startCoordinateChunk the first position of the chunk
 *

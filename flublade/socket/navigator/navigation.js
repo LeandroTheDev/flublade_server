@@ -370,8 +370,8 @@ function updatePlayerDirection(ws, ip, message, id) {
     y = message["direction"][1];
     //Check if player is stopped
     if (x == 0 && y == 0) return;
-    //Update the player for the next tick
-    playerCoordinate[id] = [x * 10, y * 10];
+    //Update the player for the next tick, this is the default player speed
+    playerCoordinate[id] = [x * 5, y * 5];
 }
 
 //

@@ -26,7 +26,7 @@ Is very important to change the configurations for the type of the server you wa
 ![image](https://user-images.githubusercontent.com/106118473/236652006-d19962d9-2f60-46ba-8ae0-5cf136f2664b.png)
 
 
-- If you want to edit something in the game see the [wiki](https://github.com/LeandroTheDev/flublade_backend/wiki)
+- More informations see the [wiki](https://github.com/LeandroTheDev/flublade_backend/wiki)
 
 # Dependencies
 - npm install bcryptjs

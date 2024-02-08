@@ -4,21 +4,22 @@ serverName=My Custom Server
 #Game Version, needs to match with client
 gameVersion=1.0.0
 
-#Connection Configuration#In milisseconds, the timer until client need to wait after connecting again
+#Connection Configuration
+#In milisseconds, the timer until client need to wait after connecting again
 socketDDOSTimer=1000
 #Quantity of times the client can request a response from http server until the timer
 httpDDOSLimitUntilTimer=5
-#In milisseconds, the timer until client need to wait after requesting response again
+#In milisseconds, the timer to reset the DDOSLimit for the client
 httpDDOSTimer=5000
 #Database IP for the server connect
-databaseIP=189.27.179.34
+databaseIP=127.0.0.1
 #Database User, the account name to server login into database
 databaseUser=flublade
 #Database Password of the account
 databasePassword=i@Dhs4e5E%fGz&ngbY2m&AGRCVlskBUrrCnsYFUze&fhxehb#j
 #Navigation Socket Update every millisecond
 navigatorTicks=15
-#Manually added
+#Chunk unload timer in milisseconds, if the chunk is not see then in milliseconds for chunk reset
 chunkUnloadTicks=60000
-#Chunk Radius to server load and send the datas, if 0 only loads the chunk that players is in
+#Chunk Radius to server load and send the datas, the minimum is 1
 chunkRadiusView=1
